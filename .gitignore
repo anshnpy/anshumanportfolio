@@ -1,0 +1,25 @@
+# v0 sandbox internal files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+.snowflake/
+.v0-trash/
+.vercel/
+
+# Environment variables
+.env*.local
+
+# Common ignores
+node_modules
+.next/
+.DS_Store
+# Local backup files
+*.backup.css
+*.before-fix
+*.hero-backup.css
+*.step0-backup.css
+*.before-opening-intro.tsx
+*.hero-backup.tsx
+*.step0-backup.tsx
+
+app/globals.before-opening-intro.css
