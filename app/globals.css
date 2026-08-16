@@ -3412,3 +3412,38 @@ body { font-family: var(--display); }
     min-height:0 !important;
   }
 }
+
+/* ===== MOBILE CHAT CLOSE BUTTON � CLEAN ===== */
+@media (max-width:600px){
+  .orbit-chat-window .orbit-close{
+    position:absolute !important;
+    top:10px !important;
+    right:10px !important;
+    z-index:999 !important;
+
+    width:34px !important;
+    height:34px !important;
+    min-width:34px !important;
+    padding:0 !important;
+
+    border:0 !important;
+    outline:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+
+    display:grid !important;
+    place-items:center !important;
+
+    color:rgba(244,241,234,.65) !important;
+    font-size:26px !important;
+    line-height:1 !important;
+  }
+
+  .orbit-chat-window .orbit-close:hover{
+    border:0 !important;
+    background:transparent !important;
+    color:#c8ff00 !important;
+    box-shadow:none !important;
+    transform:scale(1.08);
+  }
+}
