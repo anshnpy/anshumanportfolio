@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import {
   UserRound,
   Code2,
@@ -7,7 +7,7 @@ import {
   Mail,
   Send,
   X,
-  ExternalLink,
+  ExternalLink, Globe2,
 } from "lucide-react";
 
 const profile = {
@@ -119,11 +119,54 @@ type Action = {
   external?: boolean;
 };
 
+type CyberItem = {
+  id: string;
+  description: string;
+  url: string;
+  published?: string | null;
+  lastModified?: string | null;
+  vendor?: string;
+  product?: string;
+  vulnerabilityName?: string;
+  dateAdded?: string;
+  requiredAction?: string;
+  dueDate?: string;
+};
+
+type CyberData = {
+  updated: string;
+  sources: {
+    nvd: string;
+    cisaKev: string;
+  };
+  vulnerabilities: CyberItem[];
+  exploited: CyberItem[];
+};
 type Reply = {
   text: string;
   actions?: Action[];
 };
 
+async function getCyberIntelligence(): Promise<CyberData> {
+  const isLocal =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
+  const apiUrl = isLocal
+    ? "http://127.0.0.1:8788/api/cyber"
+    : "/api/cyber";
+
+  const response = await fetch(apiUrl, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Cyber intelligence request failed");
+  }
+
+  return response.json();
+}
 function getReply(input: string): Reply {
   const q = input.toLowerCase().trim();
   const hinglish = isHinglish(input);
@@ -361,7 +404,62 @@ function getReply(input: string): Reply {
         : "SOC and Blue Team security are key areas of Anshuman's career focus. He is building skills around monitoring, log analysis, threat detection and incident-response fundamentals.",
     };
   }
+  if (
 
+    q.includes("experience") ||
+    q.includes("cybersecurity experience") ||
+    q.includes("security experience") ||
+    q.includes("work experience")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka current portfolio practical cybersecurity learning, hands-on security builds aur SOC-focused skill development ko highlight karta hai. In builds ko professional work experience ke roop mein present nahi kiya gaya hai."
+        : "Anshuman's current portfolio highlights practical cybersecurity learning, hands-on security builds and SOC-focused skill development. These builds are not presented as professional work experience.",
+      actions: [openCv, openGithub],
+    };
+  }
+
+  if (
+    q.includes("soc l1") ||
+    q.includes("soc level 1") ||
+    q.includes("soc analyst") ||
+    q.includes("soc role")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman entry-level SOC / SOC L1 aur Blue Team opportunities ko target kar rahe hain. Unka focus security monitoring, log analysis, threat detection aur incident-response fundamentals par hai."
+        : "Anshuman is targeting entry-level SOC / SOC L1 and Blue Team opportunities. His focus includes security monitoring, log analysis, threat detection and incident-response fundamentals.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("internship") ||
+    q.includes("intern") ||
+    q.includes("entry level") ||
+    q.includes("entry-level")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman entry-level Cybersecurity, SOC aur Blue Team opportunities ke liye open hain. Portfolio practical learning aur hands-on security builds ko showcase karta hai."
+        : "Anshuman is open to entry-level Cybersecurity, SOC and Blue Team opportunities. His portfolio showcases practical learning and hands-on security builds.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("currently building") ||
+    q.includes("current build") ||
+    q.includes("what is he building") ||
+    q.includes("building now")
+  ) {
+    return {
+      text: hinglish
+        ? `Abhi portfolio mein ${profile.projects.join(", ")} jaise security builds aur visible learning experiments showcase kiye ja rahe hain.`
+        : `The portfolio currently showcases security builds such as ${profile.projects.join(", ")} along with visible learning experiments.`,
+      actions: [openGithub],
+    };
+  }
   if (
     q.includes("cybersecurity") ||
     q.includes("cyber security") ||
@@ -387,7 +485,7 @@ export default function PortfolioChatbot() {
   const [thinking, setThinking] = useState(false);
 
   const [messages, setMessages] = useState<
-    { from: "bot" | "user"; text: string; actions?: Action[] }[]
+    { from: "bot" | "user"; text: string; actions?: Action[]; cyber?: CyberData }[]
   >([]);
 
   const playReplySound = () => {
@@ -396,7 +494,7 @@ export default function PortfolioChatbot() {
     audio.play().catch(() => {});
   };
 
-  const sendMessage = (text = input) => {
+  const sendMessage = async (text = input) => {
     const value = text.trim();
 
     if (!value || thinking) return;
@@ -408,6 +506,40 @@ export default function PortfolioChatbot() {
 
     setInput("");
     setThinking(true);
+
+    const isCyberNewsRequest =
+      value.toLowerCase().includes("cyber news") ||
+      value.toLowerCase().includes("latest cybersecurity news") ||
+      value.toLowerCase().includes("cybersecurity news");
+
+    if (isCyberNewsRequest) {
+      try {
+        const data = await getCyberIntelligence();
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            text: `LIVE CYBER INTELLIGENCE — NVD + CISA KEV
+Updated: ${new Date(data.updated).toLocaleString()}`,
+            cyber: data,
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            text: "I couldn't retrieve the live cybersecurity feed right now. Please try again shortly.",
+          },
+        ]);
+      } finally {
+        setThinking(false);
+        playReplySound();
+      }
+
+      return;
+    }
 
     setTimeout(() => {
       const reply = getReply(value);
@@ -425,7 +557,6 @@ export default function PortfolioChatbot() {
       playReplySound();
     }, 900);
   };
-
   const quick = (text: string) => {
     sendMessage(text);
   };
@@ -542,6 +673,15 @@ export default function PortfolioChatbot() {
 
                   <button
                     type="button"
+                    className="orbit-news-button"
+                    onClick={() => quick("Show me the latest cybersecurity news")}
+                  >
+                    <Globe2 size={15} />
+                    CYBER NEWS
+                  </button>
+
+                  <button
+                    type="button"
                     className="orbit-contact-button"
                     onClick={() => quick("How can I contact Anshuman?")}
                   >
@@ -567,6 +707,92 @@ export default function PortfolioChatbot() {
                       </small>
 
                       <p>{message.text}</p>
+                      {message.cyber && (
+                        <div className="orbit-cyber-feed">
+                          <div className="orbit-cyber-feed-head">
+                            <span>● LIVE SECURITY FEED</span>
+                            <small>NVD + CISA KEV</small>
+                          </div>
+
+                          {message.cyber.exploited.length > 0 && (
+                            <div className="orbit-cyber-group">
+                              <div className="orbit-cyber-group-title">
+                                <span>01</span>
+                                <strong>ACTIVELY EXPLOITED</strong>
+                              </div>
+
+                              {message.cyber.exploited.slice(0, 3).map((item) => (
+                                <div className="orbit-cyber-card" key={item.id}>
+                                  <div className="orbit-cyber-card-top">
+                                    <strong>{item.id}</strong>
+                                    <span>KEV</span>
+                                  </div>
+
+                                  <h4>
+                                    {item.vulnerabilityName || item.description}
+                                  </h4>
+
+                                  <p>{item.vendor} · {item.product}</p>
+
+                                  <div className="orbit-cyber-card-meta">
+                                    <span>
+                                      ADDED {item.dateAdded || "—"}
+                                    </span>
+
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      VIEW ADVISORY ↗
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {message.cyber.vulnerabilities.length > 0 && (
+                            <div className="orbit-cyber-group">
+                              <div className="orbit-cyber-group-title">
+                                <span>02</span>
+                                <strong>RECENT CVEs</strong>
+                              </div>
+
+                              {message.cyber.vulnerabilities.slice(0, 3).map((item) => (
+                                <div className="orbit-cyber-card" key={item.id}>
+                                  <div className="orbit-cyber-card-top">
+                                    <strong>{item.id}</strong>
+                                    <span>NVD</span>
+                                  </div>
+
+                                  <p>{item.description}</p>
+
+                                  <div className="orbit-cyber-card-meta">
+                                    <span>
+                                      {item.published
+                                        ? new Date(item.published).toLocaleDateString()
+                                        : "RECENT"}
+                                    </span>
+
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      VIEW CVE ↗
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="orbit-cyber-updated">
+                            UPDATED {new Date(message.cyber.updated).toLocaleString()}
+                          </div>
+                        </div>
+                      )}
 
                       {message.actions && message.actions.length > 0 && (
                         <div className="orbit-message-actions">
