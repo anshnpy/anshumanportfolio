@@ -4067,3 +4067,69 @@ body { font-family: var(--display); }
   }
 }
 
+
+/* ===== CHATBOT MESSAGE ACTIONS ===== */
+
+.orbit-message-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+
+.orbit-message-actions button{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid rgba(200,255,61,.32);
+  background:rgba(200,255,61,.04);
+  color:rgba(244,241,234,.82);
+  padding:8px 10px;
+  font:8px var(--technical);
+  letter-spacing:.08em;
+  cursor:pointer;
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    color .2s ease,
+    transform .2s ease;
+}
+
+.orbit-message-actions button:hover{
+  background:var(--lime);
+  border-color:var(--lime);
+  color:#080808;
+  transform:translateY(-1px);
+}
+
+.orbit-bot-message p{
+  font-size:10px;
+  line-height:1.7;
+}
+
+.orbit-user-message p{
+  font-size:10px;
+  line-height:1.6;
+}
+
+.orbit-message{
+  margin-bottom:18px;
+}
+
+@media(max-width:600px){
+  .orbit-message-actions{
+    gap:6px;
+  }
+
+  .orbit-message-actions button{
+    padding:8px 9px;
+    font-size:7px;
+  }
+
+  .orbit-bot-message p,
+  .orbit-user-message p{
+    font-size:9px;
+    line-height:1.65;
+  }
+}
+

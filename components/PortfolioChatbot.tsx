@@ -1,19 +1,27 @@
-"use client";
-
-import { useState } from "react";
-import { UserRound, Code2, FolderOpen, FileText, Mail, Send, X } from "lucide-react";
+﻿import { useState } from "react";
+import {
+  UserRound,
+  Code2,
+  FolderOpen,
+  FileText,
+  Mail,
+  Send,
+  X,
+  ExternalLink,
+} from "lucide-react";
 
 const profile = {
   name: "Anshuman Pandey",
 
   about:
-    "Cybersecurity-focused BCA graduate building practical security systems, SOC workflows and digital experiences.",
+    "Anshuman Pandey is a BCA graduate focused on Cybersecurity and Security Operations. He is building practical security knowledge around defensive security, SOC workflows and security-focused projects.",
 
-  education:
-    "BCA — completed.",
+  education: "BCA graduate.",
 
   focus:
-    "Cybersecurity and Security Operations.",
+    "Cybersecurity, Security Operations, SOC and Blue Team security.",
+
+  location: "Delhi, India",
 
   skills: [
     "Networking",
@@ -25,26 +33,29 @@ const profile = {
     "Threat Detection",
     "Incident Response",
     "Web Security",
-    "Wireshark"
+    "Wireshark",
   ],
 
   projects: [
+    "SOC Home Lab",
     "Windows Event Log Analysis",
     "Network Traffic Analysis",
-    "Security Monitoring Dashboard",
-    "SOC Investigation Lab",
-    "Web Security Testing"
+    "Phishing Email Analysis",
+    "SIEM Log Analysis",
+    "Linux Security Practice",
   ],
 
   learning: [
-    "Threat Hunting",
     "Blue Team Operations",
+    "Log Analysis",
+    "Security Fundamentals",
+    "Threat Hunting",
     "Malware Analysis",
-    "Cloud Security"
+    "Cloud Security",
   ],
 
   career:
-    "Building a career in Cybersecurity and Security Operations, with the goal of growing toward Security Engineering.",
+    "Anshuman is building a career in Cybersecurity and Security Operations, with a long-term goal of growing toward Security Engineering.",
 
   cv: "/resume.pdf",
 
@@ -53,15 +64,44 @@ const profile = {
   linkedin:
     "https://www.linkedin.com/in/anshuman-pandey-b847b5287",
 
-  github:
-    "https://github.com/anshnpy/anshnpy"
+  github: "https://github.com/anshnpy",
 };
 
 const hinglishWords = [
-  "kya","kaise","kon","kaun","kaha","kahan","bta","bata","batao",
-  "mere","mera","meri","mujhe","kr","kar","hai","hain","chahiye",
-  "wala","wali","kyu","kyon","achha","accha","apne","iske","uske",
-  "bhi","kitna","kitne","karta","karte","kiya"
+  "kya",
+  "kaise",
+  "kon",
+  "kaun",
+  "kaha",
+  "kahan",
+  "bta",
+  "bata",
+  "batao",
+  "mere",
+  "mera",
+  "meri",
+  "mujhe",
+  "kr",
+  "kar",
+  "hai",
+  "hain",
+  "chahiye",
+  "wala",
+  "wali",
+  "kyu",
+  "kyon",
+  "achha",
+  "accha",
+  "apne",
+  "iske",
+  "uske",
+  "bhi",
+  "kitna",
+  "kitne",
+  "karta",
+  "karte",
+  "kiya",
+  "btao",
 ];
 
 function isHinglish(text: string) {
@@ -73,20 +113,57 @@ function isHinglish(text: string) {
   return hinglishWords.some((word) => words.includes(word));
 }
 
-function getReply(input: string) {
-  const q = input.toLowerCase();
+type Action = {
+  label: string;
+  href: string;
+  external?: boolean;
+};
+
+type Reply = {
+  text: string;
+  actions?: Action[];
+};
+
+function getReply(input: string): Reply {
+  const q = input.toLowerCase().trim();
   const hinglish = isHinglish(input);
+
+  const openCv: Action = {
+    label: "OPEN CV",
+    href: profile.cv,
+  };
+
+  const openGithub: Action = {
+    label: "OPEN GITHUB",
+    href: profile.github,
+    external: true,
+  };
+
+  const openLinkedin: Action = {
+    label: "OPEN LINKEDIN",
+    href: profile.linkedin,
+    external: true,
+  };
+
+  const sendEmail: Action = {
+    label: "SEND EMAIL",
+    href: `mailto:${profile.email}`,
+  };
 
   if (
     q.includes("who is anshuman") ||
     q.includes("who is he") ||
     q.includes("about anshuman") ||
     q.includes("about him") ||
-    q.includes("profile")
+    q.includes("profile") ||
+    q.includes("tell me about anshuman")
   ) {
-    return hinglish
-      ? "Anshuman Pandey ek Cybersecurity-focused BCA graduate hain. Woh practical security systems, SOC workflows aur digital experiences build kar rahe hain."
-      : "Anshuman Pandey is a Cybersecurity-focused BCA graduate building practical security systems, SOC workflows and digital experiences.";
+    return {
+      text: hinglish
+        ? "Anshuman Pandey ek BCA graduate hain jo Cybersecurity aur Security Operations par focus kar rahe hain. Unka goal practical defensive security skills build karna aur long term mein Security Engineering ki taraf grow karna hai."
+        : "Anshuman Pandey is a BCA graduate focused on Cybersecurity and Security Operations. He is building practical defensive security skills with a long-term goal of growing toward Security Engineering.",
+      actions: [openCv, openLinkedin],
+    };
   }
 
   if (
@@ -96,9 +173,12 @@ function getReply(input: string) {
     q.includes("study") ||
     q.includes("bca")
   ) {
-    return hinglish
-      ? "Anshuman ne BCA complete kiya hai."
-      : "Anshuman has completed his BCA.";
+    return {
+      text: hinglish
+        ? "Anshuman ne BCA complete kiya hai. Ab unka primary career focus Cybersecurity aur Security Operations hai."
+        : "Anshuman has completed his BCA. His current career focus is Cybersecurity and Security Operations.",
+      actions: [openCv],
+    };
   }
 
   if (
@@ -106,103 +186,208 @@ function getReply(input: string) {
     q.includes("skills") ||
     q.includes("technology") ||
     q.includes("technologies") ||
-    q.includes("tools")
+    q.includes("tools") ||
+    q.includes("tech stack")
   ) {
-    return hinglish
-      ? "Website ke according Anshuman ki core skills mein Networking, Linux, Python, Cybersecurity, SIEM, Windows Event Logs, Threat Detection, Incident Response, Web Security aur Wireshark shamil hain."
-      : "According to the portfolio, Anshuman's core skills include Networking, Linux, Python, Cybersecurity, SIEM, Windows Event Logs, Threat Detection, Incident Response, Web Security and Wireshark.";
+    return {
+      text: hinglish
+        ? `Anshuman ki core security skills mein ${profile.skills.join(", ")} shamil hain.`
+        : `Anshuman's core security skills include ${profile.skills.join(", ")}.`,
+    };
   }
 
   if (
     q.includes("project") ||
     q.includes("projects") ||
     q.includes("work") ||
-    q.includes("build")
+    q.includes("build") ||
+    q.includes("portfolio work")
   ) {
-    return hinglish
-      ? "Website par featured projects mein Windows Event Log Analysis, Network Traffic Analysis, Security Monitoring Dashboard, SOC Investigation Lab aur Web Security Testing shamil hain."
-      : "The portfolio features Windows Event Log Analysis, Network Traffic Analysis, Security Monitoring Dashboard, SOC Investigation Lab and Web Security Testing.";
+    return {
+      text: hinglish
+        ? `Portfolio mein current security builds ke roop mein ${profile.projects.join(", ")} listed hain. Ye portfolio builds hain; chatbot inhe professional work experience ke roop mein claim nahi karta.`
+        : `The portfolio currently lists ${profile.projects.join(", ")} as security builds. These are portfolio builds and are not presented as professional work experience.`,
+      actions: [openGithub],
+    };
   }
 
   if (
     q.includes("learning") ||
     q.includes("currently learning") ||
     q.includes("exploring") ||
-    q.includes("learn")
+    q.includes("learn") ||
+    q.includes("study now")
   ) {
-    return hinglish
-      ? "Currently Anshuman Threat Hunting, Blue Team Operations, Malware Analysis aur Cloud Security explore kar rahe hain."
-      : "Anshuman is currently exploring Threat Hunting, Blue Team Operations, Malware Analysis and Cloud Security.";
+    return {
+      text: hinglish
+        ? `Currently Anshuman ${profile.learning.join(", ")} par focus kar rahe hain.`
+        : `Anshuman is currently focusing on ${profile.learning.join(", ")}.`,
+    };
   }
 
   if (
     q.includes("career") ||
     q.includes("goal") ||
     q.includes("future") ||
-    q.includes("become")
+    q.includes("become") ||
+    q.includes("career goal")
   ) {
-    return hinglish
-      ? "Anshuman ka focus Cybersecurity aur Security Operations mein career build karna hai, aur long term mein Security Engineering ki taraf grow karna hai."
-      : "Anshuman is focused on building a career in Cybersecurity and Security Operations, with a long-term goal of growing toward Security Engineering.";
+    return {
+      text: hinglish
+        ? "Anshuman ka current goal Cybersecurity aur SOC/Blue Team roles mein grow karna hai. Long term mein woh Security Engineering ki taraf jaana chahte hain."
+        : "Anshuman's current goal is to grow in Cybersecurity and SOC/Blue Team roles, with a long-term direction toward Security Engineering.",
+      actions: [openCv, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("role") ||
+    q.includes("job") ||
+    q.includes("looking for") ||
+    q.includes("position") ||
+    q.includes("hire") ||
+    q.includes("hiring")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman primarily entry-level SOC, Blue Team aur Cybersecurity opportunities ke liye focused hain. Long term goal Security Engineering mein grow karna hai."
+        : "Anshuman is primarily focused on entry-level SOC, Blue Team and Cybersecurity opportunities, with a long-term goal of growing toward Security Engineering.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("why should i hire") ||
+    q.includes("why hire") ||
+    q.includes("why him") ||
+    q.includes("why anshuman")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ke paas BCA background hai aur unka focus practical Cybersecurity, SOC workflows, networking, Linux, SIEM aur defensive security par hai. Woh hands-on learning aur continuous improvement par focused hain."
+        : "Anshuman combines a BCA background with a focused direction toward Cybersecurity and SOC operations. His portfolio emphasizes networking, Linux, SIEM, security monitoring and continuous hands-on learning.",
+      actions: [openCv, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("available") ||
+    q.includes("availability") ||
+    q.includes("join")
+  ) {
+    return {
+      text: hinglish
+        ? "For current availability, role requirements ya joining details, Anshuman se directly contact karna best rahega."
+        : "For current availability, role requirements or joining details, the best option is to contact Anshuman directly.",
+      actions: [sendEmail, openLinkedin],
+    };
   }
 
   if (
     q.includes("cv") ||
-    q.includes("resume")
+    q.includes("resume") ||
+    q.includes("curriculum vitae")
   ) {
-    return hinglish
-      ? "Anshuman ka CV website ke DOWNLOAD CV button se access kiya ja sakta hai."
-      : "Anshuman's CV is available through the DOWNLOAD CV button on the website.";
+    return {
+      text: hinglish
+        ? "Anshuman ka latest CV yahan available hai."
+        : "Anshuman's CV is available here.",
+      actions: [openCv],
+    };
   }
 
   if (
     q.includes("github") ||
-    q.includes("code")
+    q.includes("code") ||
+    q.includes("repository") ||
+    q.includes("repo")
   ) {
-    return hinglish
-      ? `Anshuman ka GitHub yahan hai: ${profile.github}`
-      : `Anshuman's GitHub is available here: ${profile.github}`;
+    return {
+      text: hinglish
+        ? "Anshuman ka GitHub profile yahan hai."
+        : "Anshuman's GitHub profile is available here.",
+      actions: [openGithub],
+    };
   }
 
   if (
-    q.includes("linkedin")
+    q.includes("linkedin") ||
+    q.includes("linked in")
   ) {
-    return hinglish
-      ? `Anshuman ka LinkedIn profile yahan hai: ${profile.linkedin}`
-      : `Anshuman's LinkedIn profile is available here: ${profile.linkedin}`;
+    return {
+      text: hinglish
+        ? "Anshuman ka LinkedIn profile yahan hai."
+        : "Anshuman's LinkedIn profile yahan available hai."
+        ,
+      actions: [openLinkedin],
+    };
   }
 
   if (
     q.includes("contact") ||
     q.includes("email") ||
-    q.includes("reach")
+    q.includes("reach") ||
+    q.includes("mail")
   ) {
-    return hinglish
-      ? `Contact ke liye email ${profile.email} hai. LinkedIn aur GitHub links bhi website ke Contact section mein available hain.`
-      : `You can contact Anshuman at ${profile.email}. His LinkedIn and GitHub links are also available in the Contact section.`;
+    return {
+      text: hinglish
+        ? `Anshuman ko ${profile.email} par contact kar sakte ho. LinkedIn aur GitHub bhi available hain.`
+        : `You can contact Anshuman at ${profile.email}. His LinkedIn and GitHub profiles are also available.`,
+      actions: [sendEmail, openLinkedin, openGithub],
+    };
   }
 
   if (
     q.includes("location") ||
     q.includes("where is he") ||
-    q.includes("where does he live")
+    q.includes("where does he live") ||
+    q.includes("based")
   ) {
-    return hinglish
-      ? "Website ke according Anshuman Delhi, India mein based hain."
-      : "According to the portfolio, Anshuman is based in Delhi, India.";
+    return {
+      text: hinglish
+        ? `Anshuman ${profile.location} mein based hain.`
+        : `Anshuman is based in ${profile.location}.`,
+    };
   }
 
-  return hinglish
-    ? "Main Anshuman ke website profile, education, skills, projects, learning areas, career goal, CV, GitHub, LinkedIn aur contact information ke baare mein bata sakta hoon. Kuch specific poochho."
-    : "I can tell you about Anshuman's profile, education, skills, projects, learning areas, career goal, CV, GitHub, LinkedIn and contact information. Ask me something specific.";
+  if (
+    q.includes("soc") ||
+    q.includes("security operations") ||
+    q.includes("blue team")
+  ) {
+    return {
+      text: hinglish
+        ? "SOC aur Blue Team Anshuman ke primary career focus areas hain. Woh monitoring, log analysis, threat detection aur incident-response fundamentals build kar rahe hain."
+        : "SOC and Blue Team security are key areas of Anshuman's career focus. He is building skills around monitoring, log analysis, threat detection and incident-response fundamentals.",
+    };
+  }
+
+  if (
+    q.includes("cybersecurity") ||
+    q.includes("cyber security") ||
+    q.includes("security")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka main focus Cybersecurity hai, especially SOC, Blue Team, defensive security, monitoring aur investigation."
+        : "Anshuman's main focus is Cybersecurity, particularly SOC, Blue Team, defensive security, monitoring and investigation.",
+    };
+  }
+
+  return {
+    text: hinglish
+      ? "Main Anshuman ke profile, education, skills, portfolio builds, learning areas, SOC career focus, CV, GitHub, LinkedIn aur contact information ke baare mein bata sakta hoon. Kuch specific poochho."
+      : "I can tell you about Anshuman's profile, education, skills, portfolio builds, learning areas, SOC career focus, CV, GitHub, LinkedIn and contact information. Ask me something specific.",
+  };
 }
+
 export default function PortfolioChatbot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
 
   const [messages, setMessages] = useState<
-    { from: "bot" | "user"; text: string }[]
+    { from: "bot" | "user"; text: string; actions?: Action[] }[]
   >([]);
 
   const playReplySound = () => {
@@ -225,18 +410,38 @@ export default function PortfolioChatbot() {
     setThinking(true);
 
     setTimeout(() => {
+      const reply = getReply(value);
+
       setMessages((prev) => [
         ...prev,
-        { from: "bot", text: getReply(value) },
+        {
+          from: "bot",
+          text: reply.text,
+          actions: reply.actions,
+        },
       ]);
 
       setThinking(false);
       playReplySound();
-    }, 2000);
+    }, 900);
   };
 
   const quick = (text: string) => {
     sendMessage(text);
+  };
+
+  const openAction = (action: Action) => {
+    if (action.href.startsWith("mailto:")) {
+      window.location.href = action.href;
+      return;
+    }
+
+    if (action.external) {
+      window.open(action.href, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    window.open(action.href, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -362,6 +567,21 @@ export default function PortfolioChatbot() {
                       </small>
 
                       <p>{message.text}</p>
+
+                      {message.actions && message.actions.length > 0 && (
+                        <div className="orbit-message-actions">
+                          {message.actions.map((action) => (
+                            <button
+                              type="button"
+                              key={action.label}
+                              onClick={() => openAction(action)}
+                            >
+                              {action.label}
+                              <ExternalLink size={12} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
