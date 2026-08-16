@@ -46,7 +46,7 @@ export default function Page() {
     const observer = new IntersectionObserver((entries) => entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('is-visible')), { threshold: 0.12 })
     reveals.forEach((element) => observer.observe(element))
     const moveCursor = (event: MouseEvent) => setCursor((current) => ({ ...current, x: event.clientX, y: event.clientY }))
-    const updateClock = () => { const clock = document.getElementById('live-clock'); if (clock) clock.textContent = new Intl.DateTimeFormat('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Asia/Kolkata'}).format(new Date()) }; updateClock(); const clockTimer = window.setInterval(updateClock,1000); const overInteractive = (event: MouseEvent) => setCursor((current) => ({ ...current, active: (event.target as HTMLElement).closest('a, button') !== null }))
+    const updateClock = () => { const clock = document.getElementById('live-clock'); if (clock) clock.textContent = new Intl.DateTimeFormat('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true,timeZone:'Asia/Kolkata'}).format(new Date()) }; updateClock(); const clockTimer = window.setInterval(updateClock,1000); const overInteractive = (event: MouseEvent) => setCursor((current) => ({ ...current, active: (event.target as HTMLElement).closest('a, button') !== null }))
     window.addEventListener('mousemove', moveCursor)
     window.addEventListener('mouseover', overInteractive)
     return () => { window.clearTimeout(timer); observer.disconnect(); window.removeEventListener('mousemove', moveCursor); window.removeEventListener('mouseover', overInteractive); window.clearInterval(clockTimer) }
