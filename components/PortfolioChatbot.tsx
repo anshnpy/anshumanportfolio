@@ -557,6 +557,11 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
       playReplySound();
     }, 900);
   };
+  const backToMenu = () => {
+    setMessages([]);
+    setThinking(false);
+    setInput("");
+  };
   const quick = (text: string) => {
     sendMessage(text);
   };
@@ -693,6 +698,13 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
 
               {messages.length > 0 && (
                 <div className="orbit-messages">
+                  <button
+                    type="button"
+                    className="orbit-back-button"
+                    onClick={backToMenu}
+                  >
+                    ← BACK TO MENU
+                  </button>
                   {messages.map((message, index) => (
                     <div
                       key={index}

@@ -4367,3 +4367,32 @@ body { font-family: var(--display); }
   color:var(--lime);
 }
 
+
+/* ===== CHATBOT BACK TO MENU ===== */
+
+.orbit-back-button{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:10px;
+  padding:6px 9px;
+  border:1px solid rgba(200,255,61,.22);
+  background:rgba(200,255,61,.025);
+  color:rgba(244,241,234,.55);
+  font:7px var(--technical);
+  letter-spacing:.1em;
+  cursor:pointer;
+  transition:
+    color .2s ease,
+    border-color .2s ease,
+    background .2s ease,
+    transform .2s ease;
+}
+
+.orbit-back-button:hover{
+  color:var(--lime);
+  border-color:rgba(200,255,61,.5);
+  background:rgba(200,255,61,.06);
+  transform:translateX(-2px);
+}
+
