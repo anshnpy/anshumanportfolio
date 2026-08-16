@@ -3367,3 +3367,48 @@ body { font-family: var(--display); }
   }
 }
 
+
+
+/* ===== MOBILE ORBIT CHAT FIX ===== */
+@media (max-width:600px){
+  .orbit-chat-overlay{
+    position:fixed !important;
+    inset:0 !important;
+    padding:8px !important;
+    align-items:flex-end !important;
+    overflow:hidden !important;
+  }
+
+  .orbit-chat-window{
+    position:relative !important;
+    width:100% !important;
+    height:min(calc(100dvh - 16px), 720px) !important;
+    max-height:calc(100dvh - 16px) !important;
+    min-height:0 !important;
+    border-radius:12px !important;
+  }
+
+  .orbit-chat-window .orbit-close{
+    position:absolute !important;
+    top:10px !important;
+    right:10px !important;
+    z-index:100 !important;
+    width:34px !important;
+    height:34px !important;
+    min-width:34px !important;
+    display:grid !important;
+    place-items:center !important;
+    opacity:1 !important;
+    visibility:visible !important;
+  }
+
+  .orbit-chat-header{
+    position:relative !important;
+    min-height:58px !important;
+    padding-right:54px !important;
+  }
+
+  .orbit-chat-content{
+    min-height:0 !important;
+  }
+}
