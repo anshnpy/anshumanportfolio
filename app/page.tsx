@@ -6,12 +6,12 @@ import { ArrowDownRight, ArrowUpRight, ChevronDown, GitBranch, Mail, Menu, MoveU
 
 const navItems = ['Home', 'About', 'Skills', 'Projects', 'Experiments', 'Journey', 'Contact']
 const skillGroups = [
-  { number: '01', name: 'NETWORKING', skills: 'TCP/IP Â· DNS Â· HTTP Â· WIRESHARK Â· PACKET ANALYSIS' },
-  { number: '02', name: 'LINUX', skills: 'BASH Â· HARDENING Â· LOGS Â· PERMISSIONS Â· SYSTEMS' },
-  { number: '03', name: 'PYTHON', skills: 'AUTOMATION Â· PARSING Â· SOCKETS Â· SCRIPTS Â· APIs' },
-  { number: '04', name: 'SECURITY', skills: 'THREAT MODELING Â· IOCS Â· OSINT Â· INCIDENT RESPONSE' },
-  { number: '05', name: 'SIEM', skills: 'LOG ANALYSIS Â· DETECTION Â· ALERTS Â· SPLUNK Â· ELASTIC' },
-  { number: '06', name: 'WEB', skills: 'HTTP Â· AUTH Â· OWASP Â· JAVASCRIPT Â· APIS' },
+  { number: '01', name: 'NETWORKING', skills: 'TCP/IP Â· DNS Â· HTTP Â· WIRESHARK Â· PACKET ANALYSIS', focus: 'NETWORK DEFENSE / PACKET ANALYSIS' },
+  { number: '02', name: 'LINUX', skills: 'BASH Â· HARDENING Â· LOGS Â· PERMISSIONS Â· SYSTEMS', focus: 'SYSTEM SECURITY / HARDENING' },
+  { number: '03', name: 'PYTHON', skills: 'AUTOMATION Â· PARSING Â· SOCKETS Â· SCRIPTS Â· APIs', focus: 'SECURITY AUTOMATION / SCRIPTING' },
+  { number: '04', name: 'SECURITY', skills: 'THREAT MODELING Â· IOCS Â· OSINT Â· INCIDENT RESPONSE', focus: 'DEFENSIVE SECURITY / INVESTIGATION' },
+  { number: '05', name: 'SIEM', skills: 'LOG ANALYSIS Â· DETECTION Â· ALERTS Â· SPLUNK Â· ELASTIC', focus: 'SOC / DETECTION / ALERT TRIAGE' },
+  { number: '06', name: 'WEB', skills: 'HTTP Â· AUTH Â· OWASP Â· JAVASCRIPT Â· APIS', focus: 'WEB SECURITY / APPLICATIONS' },
 ]
 const projects = [
   { number: '01', title: 'SOC HOME LAB', description: 'A practical Security Operations environment for monitoring, detection and incident investigation.', tags: 'SOC / MONITORING / BLUE TEAM', type: 'soc' },
@@ -38,6 +38,7 @@ export default function Page() {
   const [contactOpen, setContactOpen] = useState(false)
   const [contactSent, setContactSent] = useState(false)
   const [activeSkill, setActiveSkill] = useState(0)
+  const [activeProject, setActiveProject] = useState<(typeof projects)[number] | null>(null)
   const [cursor, setCursor] = useState({ x: -100, y: -100, active: false })
 
   useEffect(() => {
@@ -76,11 +77,45 @@ export default function Page() {
     <span>ALWAYS LEARNING</span>
   </div>
 </div><div className="about-side reveal"><div className="profile-portrait"><img src="/anshuman-profile.png" alt="Portrait of Anshuman Pandey" /><div className="portrait-scan" /><span>PROFILE / 2026</span><i /></div><div className="about-description"><span>CYBERSECURITY / SOC</span><p className="profile-intro"><span>01 / SYSTEM STATUS</span><strong>DEFENDING THE<br />DIGITAL LAYER.</strong><em>Monitoring signals. Investigating threats.<br />Learning how attacks move — and how to stop them.</em><small>STATUS: BUILDING&nbsp;&nbsp; // &nbsp;&nbsp;MODE: BLUE TEAM</small></p></div><div className="profile-data"><div><small>BASED IN</small><b>DELHI, INDIA</b></div><div><small>FOCUS</small><b>CYBERSECURITY / SOC</b></div><div><small>CURRENTLY</small><b>BUILDING &amp; LEARNING</b></div><div><small>EDUCATION</small><b>BCA GRADUATE</b></div></div></div></div></section>
-      <section id="skills" className="skills page-pad section-pad"><div className="section-kicker reveal"><span>02</span><span>TOOLS / THE WORKBENCH</span></div><div className="skills-head reveal"><h2>WHAT I<br /><span>WORK WITH</span></h2><p>Curious by default. Practical by design.<br />Always one layer deeper.</p></div><div className="skill-list reveal">{skillGroups.map((skill, index) => <button key={skill.name} className={`skill-row ${activeSkill === index ? 'skill-active' : ''}`} onMouseEnter={() => setActiveSkill(index)} onFocus={() => setActiveSkill(index)} onClick={() => setActiveSkill(index)}><span>{skill.number}</span><strong>{skill.name}</strong><em>{activeSkill === index ? skill.skills : 'EXPLORE'}</em><ChevronDown size={18} /></button>)}</div></section>
-      <section id="projects" className="projects page-pad section-pad"><div className="section-kicker reveal"><span>03</span><span>SELECTED WORK / RECENT BUILDS</span></div><div className="section-title reveal"><h2>SELECTED <span>WORK.</span></h2><a href="#contact">VIEW ALL WORK <ArrowUpRight size={16} /></a></div><div className="project-grid">{projects.map((project) => <a className="project-card reveal" href="#contact" key={project.number}><div className="project-art"><SystemVisual type={project.type} /></div><div className="project-meta"><span>{project.number}</span><span>{project.tags}</span><MoveUpRight size={18} /></div><h3>{project.title}</h3><p>{project.description}</p></a>)}</div></section>
-      <section id="experiments" className="experiments page-pad section-pad"><div className="section-kicker reveal"><span>04</span><span>EXPERIMENTS / VISIBLE LEARNING</span></div><div className="experiment-intro reveal"><h2>BUILD.<br /><span>BREAK.</span><br />LEARN.</h2><p>Small systems, interfaces and security experiments.<br />Because learning should be visible.</p></div><div className="experiment-list reveal">{['SECURITY DASHBOARD', 'NETWORK VISUALIZER', 'THREAT MONITOR', 'TERMINAL INTERFACE'].map((item, index) => <a href="#contact" key={item}><span>0{index + 1}</span><strong>{item}</strong><i><ArrowUpRight size={18} /></i></a>)}</div></section>
-      <section id="journey" className="journey page-pad section-pad"><div className="section-kicker reveal"><span>05</span><span>JOURNEY / THE NEXT LAYER</span></div><div className="journey-grid"><h2 className="reveal">ALWAYS<br /><span>LEARNING.</span></h2><div className="learning-list reveal"><p>CURRENTLY EXPLORING</p>{['THREAT HUNTING', 'BLUE TEAM OPERATIONS', 'MALWARE ANALYSIS', 'CLOUD SECURITY'].map((item, index) => <div key={item}><span>0{index + 1}</span><strong>{item}</strong><ArrowUpRight size={16} /></div>)}</div></div></section>
-      <section id="contact" className="contact page-pad section-pad"><div className="contact-content reveal"><div className="section-kicker"><span>06</span><span>CONTACT / START A CONVERSATION</span></div><h2>LET&apos;S MAKE<br />SOMETHING <span>INTERESTING.</span></h2><button className="lime-button contact-button" type="button" onClick={() => setContactOpen(true)}>LET&apos;S CONNECT <ArrowUpRight size={18} /></button></div><div className="contact-links reveal"><a href="mailto:anshn.py@gmail.com"><Mail size={18} /><span>EMAIL</span><b>anshn.py@gmail.com</b><ArrowUpRight size={18} /></a><a href="https://www.linkedin.com/in/anshuman-pandey-b847b5287" target="_blank" rel="noreferrer"><Users size={18} /><span>LINKEDIN</span><b>CONNECT WITH ME</b><ArrowUpRight size={18} /></a><a href="https://github.com/anshnpy" target="_blank" rel="noreferrer"><GitBranch size={18} /><span>GITHUB</span><b>SEE THE BUILDS</b><ArrowUpRight size={18} /></a><div className="contact-location"><span>LOCATION</span><b>DELHI, INDIA</b></div></div></section>      {contactOpen && (
+      <section id="skills" className="skills page-pad section-pad"><div className="section-kicker reveal"><span>02</span><span>TOOLS / THE WORKBENCH</span></div><div className="skills-head reveal"><h2>WHAT I<br /><span>WORK WITH</span></h2><p>Curious by default. Practical by design.<br />Always one layer deeper.</p></div><div className="skill-list reveal">{skillGroups.map((skill, index) => <button key={skill.name} className={`skill-row ${activeSkill === index ? 'skill-active' : ''}`} onMouseEnter={() => setActiveSkill(index)} onFocus={() => setActiveSkill(index)} onClick={() => setActiveSkill(index)}><span>{skill.number}</span><strong>{skill.name}</strong><em>{activeSkill === index ? skill.skills : 'EXPLORE'}</em>{activeSkill === index && <small className="skill-focus">FOCUS: {skill.focus}</small>}<ChevronDown size={18} /></button>)}</div></section>
+      <section id="projects" className="projects page-pad section-pad"><div className="section-kicker reveal"><span>03</span><span>SELECTED WORK / RECENT BUILDS</span></div><div className="section-title reveal"><h2>SELECTED <span>WORK.</span></h2><a href="#projects">VIEW ALL WORK <ArrowUpRight size={16} /></a></div><div className="project-grid">{projects.map((project) => <a className="project-card reveal" href="#projects" onClick={(event) => { event.preventDefault(); setActiveProject(project) }} key={project.number}><div className="project-art"><SystemVisual type={project.type} /></div><div className="project-meta"><span>{project.number}</span><span>{project.tags}</span><span className="project-meta-status">BUILDING</span><MoveUpRight size={18} /></div><h3>{project.title}</h3><p>{project.description}</p><span className="project-explore">EXPLORE PROJECT <MoveUpRight size={14} /></span></a>)}</div></section>
+      <section id="experiments" className="experiments page-pad section-pad"><div className="section-kicker reveal"><span>04</span><span>EXPERIMENTS / VISIBLE LEARNING</span></div><div className="experiment-intro reveal"><h2>BUILD.<br /><span>BREAK.</span><br />LEARN.</h2><p>Small systems, interfaces and security experiments.<br />Because learning should be visible.</p></div><div className="experiment-list reveal">{['SECURITY DASHBOARD', 'NETWORK VISUALIZER', 'THREAT MONITOR', 'TERMINAL INTERFACE'].map((item, index) => <a href="#experiments" onClick={(event) => event.preventDefault()} key={item}><span>0{index + 1}</span><strong>{item}</strong><small className="experiment-status">BUILD QUEUE</small><i><ArrowUpRight size={18} /></i></a>)}</div></section>
+      <section id="journey" className="journey page-pad section-pad"><div className="section-kicker reveal"><span>05</span><span>JOURNEY / THE NEXT LAYER</span></div><div className="journey-grid"><h2 className="reveal">ALWAYS<br /><span>LEARNING.</span></h2><div className="learning-list reveal"><p>CURRENT FOCUS / CYBERSECURITY + SOC</p><div className="journey-status"><span>01</span><strong>BLUE TEAM OPERATIONS</strong><small>CURRENTLY LEARNING</small></div><div className="journey-status"><span>02</span><strong>LOG ANALYSIS</strong><small>CURRENTLY LEARNING</small></div><div className="journey-status"><span>03</span><strong>SECURITY FUNDAMENTALS</strong><small>CURRENTLY LEARNING</small></div><p className="journey-next">EXPLORING NEXT</p>{['THREAT HUNTING', 'MALWARE ANALYSIS', 'CLOUD SECURITY'].map((item, index) => <div key={item}><span>0{index + 1}</span><strong>{item}</strong><ArrowUpRight size={16} /></div>)}</div></div></section>
+      <section id="contact" className="contact page-pad section-pad"><div className="contact-content reveal"><div className="section-kicker"><span>06</span><span>CONTACT / START A CONVERSATION</span></div><h2>LET&apos;S MAKE<br />SOMETHING <span>INTERESTING.</span></h2><button className="lime-button contact-button" type="button" onClick={() => setContactOpen(true)}>LET&apos;S CONNECT <ArrowUpRight size={18} /></button></div><div className="contact-links reveal"><a href="mailto:anshn.py@gmail.com"><Mail size={18} /><span>EMAIL</span><b>anshn.py@gmail.com</b><ArrowUpRight size={18} /></a><a href="/resume.pdf" target="_blank" rel="noopener noreferrer"><ArrowDownRight size={18} /><span>RESUME</span><b>VIEW / DOWNLOAD CV</b><ArrowUpRight size={18} /></a><a href="https://www.linkedin.com/in/anshuman-pandey-b847b5287" target="_blank" rel="noreferrer"><Users size={18} /><span>LINKEDIN</span><b>CONNECT WITH ME</b><ArrowUpRight size={18} /></a><a href="https://github.com/anshnpy" target="_blank" rel="noreferrer"><GitBranch size={18} /><span>GITHUB</span><b>SEE THE BUILDS</b><ArrowUpRight size={18} /></a><div className="contact-location"><span>LOCATION</span><b>DELHI, INDIA</b></div></div></section>      {activeProject && (
+        <div className="project-modal" role="dialog" aria-modal="true" aria-label="Project details" onClick={() => setActiveProject(null)}>
+          <div className="project-modal-window" onClick={(event) => event.stopPropagation()}>
+            <div className="project-modal-head">
+              <span>PROJECT / {activeProject.number}</span>
+              <button type="button" onClick={() => setActiveProject(null)}>CLOSE ×</button>
+            </div>
+
+            <div className="project-modal-grid">
+              <div className="project-modal-art">
+                <SystemVisual type={activeProject.type} />
+              </div>
+
+              <div className="project-modal-info">
+                <span className="project-modal-status">● BUILDING</span>
+                <h2>{activeProject.title}</h2>
+                <p>{activeProject.description}</p>
+
+                <div className="project-modal-tags">
+                  {activeProject.tags.split(' / ').map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+
+                <div className="project-modal-note">
+                  <span>STATUS</span>
+                  <strong>PROJECT IN DEVELOPMENT</strong>
+                  <p>Case study, documentation and repository will be added as the project is completed.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {contactOpen && (
         <div className="contact-modal" role="dialog" aria-modal="true" aria-label="Quick contact">
           <button className="contact-modal-backdrop" type="button" aria-label="Close contact" onClick={() => setContactOpen(false)} />
           <div className="contact-modal-window">
