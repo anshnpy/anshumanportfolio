@@ -2260,3 +2260,35 @@ body { font-family: var(--display); }
     font-size: 10px !important;
   }
 }
+
+/* FINAL MOBILE READABILITY */
+@media (max-width: 800px) {
+  .project-card p,
+  .experiment-intro p,
+  .about-description p,
+  .hero-intro {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+  }
+
+  .project-meta span,
+  .project-card > span,
+  .experiment-list span,
+  .learning-list p {
+    font-size: 10px !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .project-meta,
+  .contact-links span,
+  .contact-links b,
+  .contact-location span,
+  .contact-location b {
+    font-size: 12px !important;
+  }
+
+  .learning-list strong,
+  .experiment-list strong {
+    font-size: 14px !important;
+  }
+}
