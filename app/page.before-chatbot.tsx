@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import PortfolioChatbot from "../components/PortfolioChatbot";
 import { ArrowDownRight, ArrowUpRight, ChevronDown, GitBranch, Mail, Menu, MoveUpRight, Users, X } from 'lucide-react'
 
 const navItems = ['Home', 'About', 'Skills', 'Projects', 'Experiments', 'Journey', 'Contact']
@@ -56,7 +55,6 @@ export default function Page() {
     <header className="site-nav"><a className="brand" href="#top" aria-label="Back to top">AP<span>.</span></a><nav>{navItems.map((item) => <a key={item} href={`#${item.toLowerCase()}`}>{item}</a>)}</nav><a className="talk-link" href="#contact">LET&apos;S TALK <ArrowUpRight size={14} /></a><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-controls="mobile-menu" aria-label="Toggle navigation">{menuOpen ? <X size={20} /> : <Menu size={20} />}</button></header>
     <div id="mobile-menu" className={`mobile-menu ${menuOpen ? 'mobile-menu-open' : ''}`}>{navItems.map((item) => <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setMenuOpen(false)}>{item}<ArrowUpRight size={16} /></a>)}</div>
 
-    <PortfolioChatbot />
     <main id="top">
       <section id="home" className="hero page-pad"><div className="hero-copy reveal"><div className="eyebrow"><span className="lime-dot" /> HELLO, I&apos;M</div><h1>ANSHUMAN<br /><span>PANDEY</span></h1><p className="hero-intro">I build digital experiences, security systems and things that shouldn&apos;t look boring.</p><div className="hero-actions"><a className="lime-button" href="#projects">EXPLORE WORK <ArrowUpRight size={16} /></a><a className="text-button" href="/resume.pdf" target="_blank" rel="noopener noreferrer">DOWNLOAD CV <ArrowDownRight size={16} /></a></div><div className="identity-labels"><span>CYBERSECURITY</span><span>SECURITY OPERATIONS</span><span>CREATIVE TECHNOLOGY</span></div></div><div className="hero-art reveal"><SystemVisual /></div><div className="scroll-cue"><span>SCROLL TO EXPLORE</span><ArrowDownRight size={16} /></div></section>
       <section className="stats page-pad reveal"><div><strong>06<span>+</span></strong><small>SECURITY PROJECTS</small></div><div><strong>06</strong><small>CORE SKILL AREAS</small></div><div><strong>100<span>%</span></strong><small>HANDS-ON FOCUS</small></div><div><strong>∞</strong><small>ALWAYS LEARNING</small></div><div><strong>24<span>/7</span></strong><small>CURIOSITY MODE</small></div></section>
