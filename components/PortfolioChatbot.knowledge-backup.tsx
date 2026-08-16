@@ -5,16 +5,8 @@ import { UserRound, Code2, FolderOpen, FileText, Mail, Send, X } from "lucide-re
 
 const profile = {
   name: "Anshuman Pandey",
-
-  about:
-    "Cybersecurity-focused BCA graduate building practical security systems, SOC workflows and digital experiences.",
-
-  education:
-    "BCA — completed.",
-
-  focus:
-    "Cybersecurity and Security Operations.",
-
+  education: "BCA graduate",
+  focus: "Cybersecurity, SOC Operations, Threat Detection and Blue Team security",
   skills: [
     "Networking",
     "Linux",
@@ -27,50 +19,59 @@ const profile = {
     "Web Security",
     "Wireshark"
   ],
-
   projects: [
+    "SOC Home Lab",
     "Windows Event Log Analysis",
     "Network Traffic Analysis",
-    "Security Monitoring Dashboard",
-    "SOC Investigation Lab",
-    "Web Security Testing"
+    "Phishing Email Analysis",
+    "SIEM Log Analysis",
+    "Linux Security Practice"
   ],
-
-  learning: [
+  interests: [
+    "SOC Operations",
     "Threat Hunting",
     "Blue Team Operations",
     "Malware Analysis",
     "Cloud Security"
-  ],
-
-  career:
-    "Building a career in Cybersecurity and Security Operations, with the goal of growing toward Security Engineering.",
-
-  cv: "/resume.pdf",
-
-  email: "anshn.py@gmail.com",
-
-  linkedin:
-    "https://www.linkedin.com/in/anshuman-pandey-b847b5287",
-
-  github:
-    "https://github.com/anshnpy/anshnpy"
+  ]
 };
 
 const hinglishWords = [
-  "kya","kaise","kon","kaun","kaha","kahan","bta","bata","batao",
-  "mere","mera","meri","mujhe","kr","kar","hai","hain","chahiye",
-  "wala","wali","kyu","kyon","achha","accha","apne","iske","uske",
-  "bhi","kitna","kitne","karta","karte","kiya"
+  "kya",
+  "kaise",
+  "kon",
+  "kaun",
+  "kaha",
+  "kahan",
+  "bta",
+  "bata",
+  "batao",
+  "mere",
+  "mera",
+  "meri",
+  "mujhe",
+  "kr",
+  "kar",
+  "hai",
+  "hain",
+  "chahiye",
+  "wala",
+  "wali",
+  "kyu",
+  "kyon",
+  "accha",
+  "achha",
+  "apne",
+  "iske",
+  "uske"
 ];
 
 function isHinglish(text: string) {
-  const words = text
-    .toLowerCase()
-    .replace(/[^a-zA-Z0-9\s]/g, "")
-    .split(/\s+/);
+  const q = text.toLowerCase();
 
-  return hinglishWords.some((word) => words.includes(word));
+  return hinglishWords.some((word) => {
+    return new RegExp(`\\b${word}\\b`, "i").test(q);
+  });
 }
 
 function getReply(input: string) {
@@ -78,27 +79,26 @@ function getReply(input: string) {
   const hinglish = isHinglish(input);
 
   if (
-    q.includes("who is anshuman") ||
-    q.includes("who is he") ||
-    q.includes("about anshuman") ||
-    q.includes("about him") ||
+    q.includes("who") ||
+    q.includes("about") ||
+    q.includes("anshuman") ||
     q.includes("profile")
   ) {
     return hinglish
-      ? "Anshuman Pandey ek Cybersecurity-focused BCA graduate hain. Woh practical security systems, SOC workflows aur digital experiences build kar rahe hain."
-      : "Anshuman Pandey is a Cybersecurity-focused BCA graduate building practical security systems, SOC workflows and digital experiences.";
+      ? `Anshuman Pandey ek BCA graduate hain jo currently Cybersecurity aur SOC Operations par focus kar rahe hain. Unka main focus threat detection, security monitoring, Blue Team operations aur practical cybersecurity projects par hai.`
+      : `Anshuman Pandey is a BCA graduate focused on Cybersecurity and SOC Operations. His current focus includes threat detection, security monitoring, Blue Team operations and practical cybersecurity projects.`;
   }
 
   if (
     q.includes("education") ||
     q.includes("degree") ||
-    q.includes("qualification") ||
     q.includes("study") ||
+    q.includes("qualification") ||
     q.includes("bca")
   ) {
     return hinglish
-      ? "Anshuman ne BCA complete kiya hai."
-      : "Anshuman has completed his BCA.";
+      ? `Anshuman ne BCA complete kiya hai aur ab apna career Cybersecurity aur SOC domain mein build kar rahe hain.`
+      : `Anshuman has completed his BCA and is building his career in Cybersecurity and SOC Operations.`;
   }
 
   if (
@@ -109,8 +109,8 @@ function getReply(input: string) {
     q.includes("tools")
   ) {
     return hinglish
-      ? "Website ke according Anshuman ki core skills mein Networking, Linux, Python, Cybersecurity, SIEM, Windows Event Logs, Threat Detection, Incident Response, Web Security aur Wireshark shamil hain."
-      : "According to the portfolio, Anshuman's core skills include Networking, Linux, Python, Cybersecurity, SIEM, Windows Event Logs, Threat Detection, Incident Response, Web Security and Wireshark.";
+      ? `Anshuman ki core skills hain: Networking, Linux, Python, Cybersecurity, SIEM, Windows Event Logs, Threat Detection, Incident Response, Web Security aur Wireshark.`
+      : `Anshuman's core skills include Networking, Linux, Python, Cybersecurity, SIEM, Windows Event Logs, Threat Detection, Incident Response, Web Security and Wireshark.`;
   }
 
   if (
@@ -120,30 +120,40 @@ function getReply(input: string) {
     q.includes("build")
   ) {
     return hinglish
-      ? "Website par featured projects mein Windows Event Log Analysis, Network Traffic Analysis, Security Monitoring Dashboard, SOC Investigation Lab aur Web Security Testing shamil hain."
-      : "The portfolio features Windows Event Log Analysis, Network Traffic Analysis, Security Monitoring Dashboard, SOC Investigation Lab and Web Security Testing.";
+      ? `Unke portfolio mein SOC Home Lab, Windows Event Log Analysis, Network Traffic Analysis, Phishing Email Analysis, SIEM Log Analysis aur Linux Security Practice jaise projects hain.`
+      : `His portfolio includes a SOC Home Lab, Windows Event Log Analysis, Network Traffic Analysis, Phishing Email Analysis, SIEM Log Analysis and Linux Security Practice.`;
   }
 
   if (
+    q.includes("soc") ||
+    q.includes("security operations") ||
+    q.includes("cybersecurity") ||
+    q.includes("cyber security")
+  ) {
+    return hinglish
+      ? `Anshuman ka current career focus Cybersecurity aur SOC Operations hai. Woh defensive security, monitoring, threat detection aur Blue Team concepts par focus kar rahe hain.`
+      : `Anshuman's current career focus is Cybersecurity and SOC Operations, with an emphasis on defensive security, monitoring, threat detection and Blue Team concepts.`;
+  }
+
+  if (
+    q.includes("goal") ||
+    q.includes("career") ||
+    q.includes("future") ||
+    q.includes("want to become")
+  ) {
+    return hinglish
+      ? `Anshuman ka goal Cybersecurity domain mein grow karna aur SOC/Security Engineering side par strong practical experience build karna hai.`
+      : `Anshuman's goal is to grow in Cybersecurity and build strong practical experience in SOC and Security Engineering.`;
+  }
+
+  if (
+    q.includes("interest") ||
     q.includes("learning") ||
-    q.includes("currently learning") ||
-    q.includes("exploring") ||
     q.includes("learn")
   ) {
     return hinglish
-      ? "Currently Anshuman Threat Hunting, Blue Team Operations, Malware Analysis aur Cloud Security explore kar rahe hain."
-      : "Anshuman is currently exploring Threat Hunting, Blue Team Operations, Malware Analysis and Cloud Security.";
-  }
-
-  if (
-    q.includes("career") ||
-    q.includes("goal") ||
-    q.includes("future") ||
-    q.includes("become")
-  ) {
-    return hinglish
-      ? "Anshuman ka focus Cybersecurity aur Security Operations mein career build karna hai, aur long term mein Security Engineering ki taraf grow karna hai."
-      : "Anshuman is focused on building a career in Cybersecurity and Security Operations, with a long-term goal of growing toward Security Engineering.";
+      ? `Currently woh Threat Hunting, Blue Team Operations, Malware Analysis aur Cloud Security jaise areas explore kar rahe hain.`
+      : `He is currently exploring Threat Hunting, Blue Team Operations, Malware Analysis and Cloud Security.`;
   }
 
   if (
@@ -151,50 +161,36 @@ function getReply(input: string) {
     q.includes("resume")
   ) {
     return hinglish
-      ? "Anshuman ka CV website ke DOWNLOAD CV button se access kiya ja sakta hai."
-      : "Anshuman's CV is available through the DOWNLOAD CV button on the website.";
-  }
-
-  if (
-    q.includes("github") ||
-    q.includes("code")
-  ) {
-    return hinglish
-      ? `Anshuman ka GitHub yahan hai: ${profile.github}`
-      : `Anshuman's GitHub is available here: ${profile.github}`;
-  }
-
-  if (
-    q.includes("linkedin")
-  ) {
-    return hinglish
-      ? `Anshuman ka LinkedIn profile yahan hai: ${profile.linkedin}`
-      : `Anshuman's LinkedIn profile is available here: ${profile.linkedin}`;
+      ? `Anshuman ka latest CV portfolio ke homepage par DOWNLOAD CV button se access kiya ja sakta hai.`
+      : `Anshuman's latest CV is available through the DOWNLOAD CV button on the portfolio homepage.`;
   }
 
   if (
     q.includes("contact") ||
     q.includes("email") ||
+    q.includes("linkedin") ||
     q.includes("reach")
   ) {
     return hinglish
-      ? `Contact ke liye email ${profile.email} hai. LinkedIn aur GitHub links bhi website ke Contact section mein available hain.`
-      : `You can contact Anshuman at ${profile.email}. His LinkedIn and GitHub links are also available in the Contact section.`;
+      ? `Anshuman se contact karne ke liye portfolio ke Contact section mein email, LinkedIn aur GitHub links available hain.`
+      : `You can contact Anshuman through the email, LinkedIn and GitHub links available in the Contact section.`;
   }
 
-  if (
-    q.includes("location") ||
-    q.includes("where is he") ||
-    q.includes("where does he live")
-  ) {
+  if (q.includes("github")) {
     return hinglish
-      ? "Website ke according Anshuman Delhi, India mein based hain."
-      : "According to the portfolio, Anshuman is based in Delhi, India.";
+      ? `Anshuman ka GitHub link portfolio ke Contact section mein available hai, jahan aap unke builds aur code explore kar sakte ho.`
+      : `Anshuman's GitHub link is available in the Contact section, where you can explore his builds and code.`;
+  }
+
+  if (q.includes("location") || q.includes("where")) {
+    return hinglish
+      ? `Anshuman India mein based hain.`
+      : `Anshuman is based in India.`;
   }
 
   return hinglish
-    ? "Main Anshuman ke website profile, education, skills, projects, learning areas, career goal, CV, GitHub, LinkedIn aur contact information ke baare mein bata sakta hoon. Kuch specific poochho."
-    : "I can tell you about Anshuman's profile, education, skills, projects, learning areas, career goal, CV, GitHub, LinkedIn and contact information. Ask me something specific.";
+    ? `Main Anshuman ke profile, education, cybersecurity skills, SOC journey, projects, CV, GitHub aur contact information ke baare mein bata sakta hoon. Kuch specific poochho 😊`
+    : `I can tell you about Anshuman's profile, education, cybersecurity skills, SOC journey, projects, CV, GitHub and contact information. Ask me something specific.`;
 }
 export default function PortfolioChatbot() {
   const [open, setOpen] = useState(false);
