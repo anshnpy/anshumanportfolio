@@ -2211,3 +2211,52 @@ body { font-family: var(--display); }
   }
 }
 
+
+/* MOBILE TEXT SIZE FIX */
+@media (max-width: 800px) {
+  .hero-intro {
+    font-size: 16px !important;
+    line-height: 1.7 !important;
+  }
+
+  .identity-labels span {
+    font-size: 10px !important;
+  }
+
+  .section-kicker span {
+    font-size: 11px !important;
+  }
+
+  .about-description p,
+  .project-card p,
+  .experiment-intro p {
+    font-size: 15px !important;
+    line-height: 1.7 !important;
+  }
+
+  .profile-data small,
+  .profile-data b {
+    font-size: 10px !important;
+  }
+
+  .project-meta span,
+  .learning-list p {
+    font-size: 11px !important;
+  }
+
+  .learning-list strong,
+  .experiment-list strong {
+    font-size: 15px !important;
+  }
+
+  .contact-links span,
+  .contact-links b,
+  .contact-location span,
+  .contact-location b {
+    font-size: 12px !important;
+  }
+
+  .footer span {
+    font-size: 10px !important;
+  }
+}
