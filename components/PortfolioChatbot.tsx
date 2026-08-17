@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   UserRound,
   Code2,
@@ -483,11 +483,20 @@ export default function PortfolioChatbot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<
     { from: "bot" | "user"; text: string; actions?: Action[]; cyber?: CyberData }[]
   >([]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [messages, thinking, open]);
   const playReplySound = () => {
     const audio = new Audio("/message-sent.wav");
     audio.volume = 0.18;
@@ -822,6 +831,8 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                       )}
                     </div>
                   ))}
+
+                  <div ref={messagesEndRef} />
                 </div>
               )}
 
