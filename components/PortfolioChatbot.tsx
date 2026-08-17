@@ -646,6 +646,18 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
               </button>
             </header>
 
+            {messages.length > 0 && (
+              <div className="orbit-chat-topbar">
+                <button
+                  type="button"
+                  className="orbit-back-button"
+                  onClick={backToMenu}
+                >
+                  ← BACK TO MENU
+                </button>
+              </div>
+            )}
+
             <div className="orbit-chat-content">
               {messages.length === 0 && !thinking && (
                 <div className="orbit-welcome">
@@ -707,13 +719,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
 
               {messages.length > 0 && (
                 <div className="orbit-messages">
-                  <button
-                    type="button"
-                    className="orbit-back-button"
-                    onClick={backToMenu}
-                  >
-                    ← BACK TO MENU
-                  </button>
+
                   {messages.map((message, index) => (
                     <div
                       key={index}
