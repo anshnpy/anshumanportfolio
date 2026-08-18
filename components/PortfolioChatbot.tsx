@@ -5,7 +5,7 @@ import {
   FolderOpen,
   FileText,
   Mail,
-  Send,
+  AudioLines, Send,
   X,
   ExternalLink, Globe2,
 } from "lucide-react";
@@ -240,21 +240,6 @@ function getReply(input: string): Reply {
   }
 
   if (
-    q.includes("project") ||
-    q.includes("projects") ||
-    q.includes("work") ||
-    q.includes("build") ||
-    q.includes("portfolio work")
-  ) {
-    return {
-      text: hinglish
-        ? `Portfolio mein current security builds ke roop mein ${profile.projects.join(", ")} listed hain. Ye portfolio builds hain; chatbot inhe professional work experience ke roop mein claim nahi karta.`
-        : `The portfolio currently lists ${profile.projects.join(", ")} as security builds. These are portfolio builds and are not presented as professional work experience.`,
-      actions: [openGithub],
-    };
-  }
-
-  if (
     q.includes("learning") ||
     q.includes("currently learning") ||
     q.includes("exploring") ||
@@ -483,6 +468,475 @@ export default function PortfolioChatbot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const voiceModeRef = useRef(false);
+
+  const setVoiceModeSafe = (value: boolean) => {
+    voiceModeRef.current = value;
+    setVoiceMode(value);
+  };
+  const [speaking, setSpeaking] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voiceRequestRef = useRef(false);
+  const voiceGenerationRef = useRef(0);
+  const speakingRef = useRef(false);
+
+  // Text currently being spoken by the browser.
+  // Used to prevent the microphone from hearing the bot's own voice.
+  const spokenTextRef = useRef("");
+
+  const normalizeVoiceText = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const looksLikeBotEcho = (heard: string) => {
+    const spoken = normalizeVoiceText(spokenTextRef.current);
+    const current = normalizeVoiceText(heard);
+
+    if (!spoken || !current) return false;
+    if (current.length < 2) return true;
+
+    if (spoken.startsWith(current)) return true;
+
+    const words = current.split(" ");
+    if (words.length >= 2) {
+      const spokenWords = spoken.split(" ");
+
+      for (let i = 0; i <= spokenWords.length - words.length; i++) {
+        const chunk = spokenWords
+          .slice(i, i + words.length)
+          .join(" ");
+
+        if (chunk === current) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const clearSilenceTimer = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  };
+
+  const startSilenceTimer = () => {
+    clearSilenceTimer();
+
+    silenceTimerRef.current = setTimeout(() => {
+      if (voiceModeRef.current && !speakingRef.current) {
+        stopVoiceRecognition();
+        setListening(false);
+      }
+    }, 10000);
+  };
+
+  const stopVoiceRecognition = () => {
+    clearSilenceTimer();
+    const recognition = recognitionRef.current;
+
+    if (!recognition) return;
+
+    recognitionRef.current = null;
+
+    try {
+      recognition.onend = null;
+      recognition.onerror = null;
+      recognition.onresult = null;
+      recognition.stop();
+    } catch {}
+
+    setListening(false);
+  };
+
+  const closeVoiceMode = () => {
+    stopVoiceRecognition();
+
+    if (
+      typeof window !== "undefined" &&
+      "speechSynthesis" in window
+    ) {
+      window.speechSynthesis.cancel();
+    }
+
+    voiceGenerationRef.current += 1;
+    voiceRequestRef.current = false;
+    speakingRef.current = false;
+    spokenTextRef.current = "";
+
+    setSpeaking(false);
+    setListening(false);
+    setVoiceModeSafe(false);
+  };
+
+  const speakReply = (text: string) => {
+    if (
+      typeof window === "undefined" ||
+      !("speechSynthesis" in window)
+    ) {
+      return;
+    }
+
+    const generation = voiceGenerationRef.current;
+
+    // NEVER keep microphone active while TTS is speaking.
+    stopVoiceRecognition();
+
+    window.speechSynthesis.cancel();
+
+    spokenTextRef.current = text;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    const voices = window.speechSynthesis.getVoices();
+
+    const preferredVoice =
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase() === "en-in"
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase().startsWith("en-in")
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase().startsWith("en-us")
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase().startsWith("en-gb")
+      );
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.lang = "en-IN";
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+
+    utterance.onstart = () => {
+      if (
+        voiceGenerationRef.current !== generation ||
+        !voiceModeRef.current
+      ) {
+        window.speechSynthesis.cancel();
+        return;
+      }
+
+      speakingRef.current = true;
+      setSpeaking(true);
+
+      // IMPORTANT:
+      // Recognition stays OFF while the bot is speaking.
+      stopVoiceRecognition();
+    };
+
+    utterance.onend = () => {
+      if (
+        voiceGenerationRef.current !== generation
+      ) {
+        return;
+      }
+
+      speakingRef.current = false;
+      setSpeaking(false);
+      spokenTextRef.current = "";
+
+      if (voiceModeRef.current) {
+        setTimeout(() => {
+          if (
+            voiceModeRef.current &&
+            voiceGenerationRef.current === generation &&
+            !speakingRef.current &&
+            !window.speechSynthesis.speaking &&
+            !recognitionRef.current
+          ) {
+            startVoiceInput();
+          }
+        }, 150);
+      }
+    };
+
+    utterance.onerror = () => {
+      if (
+        voiceGenerationRef.current !== generation
+      ) {
+        return;
+      }
+
+      speakingRef.current = false;
+      setSpeaking(false);
+      spokenTextRef.current = "";
+
+      if (voiceModeRef.current) {
+        setTimeout(() => {
+          if (
+            voiceModeRef.current &&
+            !speakingRef.current &&
+            !window.speechSynthesis.speaking &&
+            !recognitionRef.current
+          ) {
+            startVoiceInput();
+          }
+        }, 150);
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const startVoiceInput = () => {
+  if (
+    typeof window === "undefined" ||
+    !voiceModeRef.current ||
+    speakingRef.current ||
+    window.speechSynthesis?.speaking
+  ) {
+    return;
+  }
+
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    console.log("SpeechRecognition is not supported by this browser.");
+    return;
+  }
+
+  if (recognitionRef.current) return;
+
+  const recognition = new SpeechRecognition();
+
+  recognition.lang = "en-IN";
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    if (recognitionRef.current === recognition) {
+      setListening(true);
+    }
+  };
+
+  recognition.onresult = (event: any) => {
+    if (recognitionRef.current !== recognition) return;
+
+    const result = event.results?.[event.resultIndex];
+    if (!result) return;
+
+    const transcript =
+      result?.[0]?.transcript?.trim() || "";
+
+    if (!transcript) return;
+
+    console.log(
+      "VOICE RESULT:",
+      transcript,
+      "FINAL:",
+      result.isFinal
+    );
+
+    if (
+      speakingRef.current ||
+      window.speechSynthesis?.speaking
+    ) {
+      return;
+    }
+
+    if (!result.isFinal) return;
+
+    const voiceCommand = transcript
+      .toLowerCase()
+      .replace(/[.,!?]/g, "")
+      .trim();
+
+    const closeVoicePhrases = [
+      "stop",
+      "bye",
+      "goodbye",
+      "close",
+      "exit",
+      "done",
+      "im done",
+      "i am done",
+      "thats all",
+      "that is all",
+      "stop listening",
+      "close voice",
+      "close the voice",
+      "close voice mode",
+      "stop voice",
+      "stop the voice",
+      "end conversation",
+      "end the conversation",
+      "you can stop"
+    ];
+
+    const shouldCloseVoice =
+      closeVoicePhrases.includes(voiceCommand);
+
+    if (shouldCloseVoice) {
+      console.log("VOICE COMMAND: Closing voice mode");
+
+      closeVoiceMode();
+      return;
+    }
+
+    try {
+      recognition.stop();
+    } catch {}
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+
+    voiceGenerationRef.current += 1;
+    voiceRequestRef.current = true;
+
+    sendMessage(transcript);
+  };
+
+  recognition.onend = () => {
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+      setListening(false);
+    }
+
+    /*
+     * Silence / timeout recovery.
+     *
+     * If the user simply stops talking and no request was sent,
+     * give the microphone another listening session.
+     *
+     * Do NOT restart while the bot is speaking.
+     */
+    if (
+      voiceModeRef.current &&
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !voiceRequestRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !recognitionRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !voiceRequestRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 700);
+    }
+  };
+
+  recognition.onerror = (event: any) => {
+    console.log("VOICE ERROR:", event?.error);
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+
+    /*
+     * Permission errors should stop the voice system.
+     * Temporary errors such as no-speech/audio-capture can recover.
+     */
+    if (
+      event?.error === "not-allowed" ||
+      event?.error === "service-not-allowed"
+    ) {
+      return;
+    }
+
+    if (
+      voiceModeRef.current &&
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !voiceRequestRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !recognitionRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !voiceRequestRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 700);
+    }
+  };
+
+  recognitionRef.current = recognition;
+
+  try {
+    recognition.start();
+  } catch (error) {
+    console.log("VOICE START ERROR:", error);
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+  }
+};
+
+useEffect(() => {
+  if (voiceMode) {
+    if (
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !recognitionRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !recognitionRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 100);
+    }
+
+    return;
+  }
+
+  voiceGenerationRef.current += 1;
+
+  stopVoiceRecognition();
+
+  if (
+    typeof window !== "undefined" &&
+    "speechSynthesis" in window
+  ) {
+    window.speechSynthesis.cancel();
+  }
+
+  spokenTextRef.current = "";
+  speakingRef.current = false;
+
+  setSpeaking(false);
+  setListening(false);
+}, [voiceMode]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<
@@ -506,7 +960,7 @@ export default function PortfolioChatbot() {
   const sendMessage = async (text = input) => {
     const value = text.trim();
 
-    if (!value || thinking) return;
+    if (!value || (thinking && !voiceRequestRef.current)) return;
 
     setMessages((prev) => [
       ...prev,
@@ -515,6 +969,9 @@ export default function PortfolioChatbot() {
 
     setInput("");
     setThinking(true);
+    const wasVoiceRequest = voiceRequestRef.current;
+    const requestGeneration = voiceGenerationRef.current;
+    voiceRequestRef.current = false;
 
     const isCyberNewsRequest =
       value.toLowerCase().includes("cyber news") ||
@@ -529,7 +986,7 @@ export default function PortfolioChatbot() {
           ...prev,
           {
             from: "bot",
-            text: `LIVE CYBER INTELLIGENCE — NVD + CISA KEV
+            text: `LIVE CYBER INTELLIGENCE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â NVD + CISA KEV
 Updated: ${new Date(data.updated).toLocaleString()}`,
             cyber: data,
           },
@@ -564,6 +1021,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
 
       setThinking(false);
       playReplySound();
+      if (wasVoiceRequest && voiceGenerationRef.current === requestGeneration) speakReply(reply.text);
     }, 900);
   };
   const backToMenu = () => {
@@ -624,10 +1082,46 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
             className="orbit-chat-backdrop"
             type="button"
             aria-label="Close chat"
-            onClick={() => setOpen(false)}
+            onClick={() => { closeVoiceMode(); setOpen(false); }}
           />
 
           <section className="orbit-chat-window">
+
+      {voiceMode && (
+        <div className="orbit-voice-mode">
+          <div className="orbit-voice-panel">
+            <button
+              type="button"
+              className="orbit-voice-close"
+              onClick={() => {
+                closeVoiceMode();
+              }}
+              aria-label="Close voice mode"
+            >
+              <X size={20} />
+            </button>
+
+            <div className={`orbit-voice-orb ${listening ? "is-listening" : ""} ${speaking ? "is-speaking" : ""}`}>
+              <div className="orbit-voice-core">
+                <AudioLines size={42} strokeWidth={1.8} />
+              </div>
+              <span className="orbit-voice-ring ring-one" />
+              <span className="orbit-voice-ring ring-two" />
+              <span className="orbit-voice-ring ring-three" />
+            </div>
+
+            <div className="orbit-voice-status">
+              <span className="orbit-voice-dot" />
+              <strong>{speaking ? "SPEAKING..." : listening ? "LISTENING..." : "READY"}</strong>
+            </div>
+
+            <p className="orbit-voice-caption">
+              {speaking ? "Orbit AI is speaking" : listening ? "I am listening..." : "Tap the voice button and speak"}
+            </p>
+          </div>
+        </div>
+      )}
+
             <div className="orbit-grid" />
 
             <header className="orbit-header">
@@ -639,7 +1133,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
               <button
                 type="button"
                 className="orbit-close"
-                onClick={() => setOpen(false)}
+                onClick={() => { closeVoiceMode(); setOpen(false); }}
                 aria-label="Close"
               >
                 <X size={17} />
@@ -653,7 +1147,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                   className="orbit-back-button"
                   onClick={backToMenu}
                 >
-                  ← BACK TO MENU
+                  Ã¢â€ Â BACK TO MENU
                 </button>
               </div>
             )}
@@ -667,7 +1161,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
 
                   <div>
                     <h3>
-                      Hey there <span>👋</span>
+                      Hey there <span>Ã°Å¸â€˜â€¹</span>
                     </h3>
 
                     <p>What do you want to know?</p>
@@ -737,7 +1231,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                       {message.cyber && (
                         <div className="orbit-cyber-feed">
                           <div className="orbit-cyber-feed-head">
-                            <span>● LIVE SECURITY FEED</span>
+                            <span>ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂÃƒâ€šÃ‚Â LIVE SECURITY FEED</span>
                             <small>NVD + CISA KEV</small>
                           </div>
 
@@ -759,11 +1253,11 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                                     {item.vulnerabilityName || item.description}
                                   </h4>
 
-                                  <p>{item.vendor} · {item.product}</p>
+                                  <p>{item.vendor} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {item.product}</p>
 
                                   <div className="orbit-cyber-card-meta">
                                     <span>
-                                      ADDED {item.dateAdded || "—"}
+                                      ADDED {item.dateAdded || "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â"}
                                     </span>
 
                                     <a
@@ -771,7 +1265,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                                       target="_blank"
                                       rel="noreferrer"
                                     >
-                                      VIEW ADVISORY ↗
+                                      VIEW ADVISORY ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â
                                     </a>
                                   </div>
                                 </div>
@@ -807,7 +1301,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                                       target="_blank"
                                       rel="noreferrer"
                                     >
-                                      VIEW CVE ↗
+                                      VIEW CVE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â
                                     </a>
                                   </div>
                                 </div>
@@ -883,8 +1377,31 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                 disabled={thinking}
                 onClick={() => sendMessage()}
                 aria-label="Send message"
+                title="Send"
+                className="send-btn"
               >
-                <Send size={17} />
+                <Send size={19} strokeWidth={2.3} />
+              </button>
+
+              <button
+                type="button"
+                disabled={thinking}
+                onClick={() => {
+  if (voiceModeRef.current) {
+    closeVoiceMode();
+    return;
+  }
+
+  setVoiceModeSafe(true);
+
+  setTimeout(() => {
+    startVoiceInput();
+  }, 300);
+}} aria-label="Voice input"
+                title={listening ? "Stop listening" : "Speak"}
+                className={`voice-btn ${listening ? "voice-active" : ""}`}
+              >
+                <AudioLines size={21} strokeWidth={2.4} />
               </button>
             </div>
 

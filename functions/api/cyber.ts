@@ -23,7 +23,7 @@ type KevItem = {
   dueDate: string;
 };
 
-export const onRequestGet: PagesFunction<Env> = async () => {
+export const onRequestGet = async () => {
   try {
     const nvdUrl =
       "https://services.nvd.nist.gov/rest/json/cves/2.0?pubStartDate=2026-07-17T00%3A00%3A00.000Z&pubEndDate=2026-08-16T23%3A59%3A59.999Z&resultsPerPage=10";
