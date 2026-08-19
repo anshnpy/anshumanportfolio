@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import {
   UserRound,
   Code2,
@@ -154,7 +154,7 @@ async function getCyberIntelligence(): Promise<CyberData> {
       window.location.hostname === "127.0.0.1");
 
   const apiUrl = isLocal
-    ? "http://127.0.0.1:8788/api/cyber"
+    ? "/api/cyber"
     : "/api/cyber";
 
   const response = await fetch(apiUrl, {
@@ -166,6 +166,174 @@ async function getCyberIntelligence(): Promise<CyberData> {
   }
 
   return response.json();
+}
+const knowledgeAliases: Record<string, string> = {
+  "soc home lab": "/data/projects/soc-home-lab.md",
+  "soc lab": "/data/projects/soc-home-lab.md",
+  "soc project": "/data/projects/soc-home-lab.md",
+
+  "windows event": "/data/projects/windows-event-log-analysis.md",
+  "windows logs": "/data/projects/windows-event-log-analysis.md",
+  "event logs": "/data/projects/windows-event-log-analysis.md",
+
+  "wireshark": "/data/projects/network-traffic-analysis.md",
+  "packet analysis": "/data/projects/network-traffic-analysis.md",
+  "network traffic": "/data/projects/network-traffic-analysis.md",
+  "network analysis": "/data/projects/network-traffic-analysis.md",
+
+  "phishing": "/data/projects/phishing-email-analysis.md",
+  "phishing email": "/data/projects/phishing-email-analysis.md",
+  "email security": "/data/projects/phishing-email-analysis.md",
+
+  "siem": "/data/projects/siem-log-analysis.md",
+  "siem logs": "/data/projects/siem-log-analysis.md",
+  "log analysis": "/data/projects/siem-log-analysis.md",
+
+  "linux security": "/data/projects/linux-security-practice.md",
+  "linux practice": "/data/projects/linux-security-practice.md",
+
+  "skills": "/data/skills.md",
+  "technologies": "/data/skills.md",
+  "tech stack": "/data/skills.md",
+
+  "learning": "/data/learning.md",
+  "currently learning": "/data/learning.md",
+
+  "career": "/data/career.md",
+  "career goal": "/data/career.md",
+
+  "profile": "/data/profile.md",
+  "about anshuman": "/data/profile.md",
+};
+
+function getKnowledgePath(input: string): string | null {
+  const q = input.toLowerCase().trim();
+
+  const matches = Object.entries(knowledgeAliases)
+    .filter(([alias]) => q.includes(alias))
+    .sort((a, b) => b[0].length - a[0].length);
+
+  return matches[0]?.[1] ?? null;
+}
+
+async function getKnowledgeFile(path: string): Promise<string | null> {
+  try {
+    const response = await fetch(path, {
+      cache: "force-cache",
+    });
+
+    if (!response.ok) return null;
+
+    return await response.text();
+  } catch {
+    return null;
+  }
+}
+
+function extractKnowledgeAnswer(
+  knowledge: string,
+  input: string
+): string | null {
+  const q = input.toLowerCase().trim();
+
+  const sections = knowledge
+    .split(/\n(?=## )/g)
+    .map((section) => section.trim())
+    .filter(Boolean);
+
+  const findSection = (...names: string[]) =>
+    sections.find((section) => {
+      const normalized = section.toLowerCase();
+      return names.some((name) => normalized.includes(`## ${name}`));
+    });
+
+  let preferredSection: string | undefined;
+
+  if (
+    q.includes("interview") ||
+    q.includes("interview answer") ||
+    q.includes("explain for interview")
+  ) {
+    preferredSection = findSection("interview explanation");
+  } else if (
+    q.includes("detail") ||
+    q.includes("detailed") ||
+    q.includes("deep dive") ||
+    q.includes("deep explanation") ||
+    q.includes("explain fully")
+  ) {
+    preferredSection = findSection("detailed answer");
+  } else if (
+    q.includes("how") ||
+    q.includes("workflow") ||
+    q.includes("process") ||
+    q.includes("investigation") ||
+    q.includes("approach")
+  ) {
+    preferredSection = findSection(
+      "investigation workflow",
+      "analysis workflow"
+    );
+  } else if (
+    q.includes("skill") ||
+    q.includes("skills") ||
+    q.includes("what did he learn") ||
+    q.includes("what was learned")
+  ) {
+    preferredSection = findSection("skills demonstrated");
+  } else if (
+    q.includes("objective") ||
+    q.includes("goal") ||
+    q.includes("purpose")
+  ) {
+    preferredSection = findSection("objective");
+  } else if (
+    q.includes("tool") ||
+    q.includes("tools") ||
+    q.includes("technology") ||
+    q.includes("technologies")
+  ) {
+    preferredSection = findSection(
+      "tool",
+      "skills demonstrated",
+      "analysis areas"
+    );
+  }
+
+  if (!preferredSection) {
+    preferredSection = findSection(
+      "short answer",
+      "overview"
+    );
+  }
+
+  if (!preferredSection) {
+    return null;
+  }
+
+  return preferredSection
+    .replace(/^##\s+.*$/m, "")
+    .trim();
+}
+
+async function getKnowledgeReply(
+  input: string
+): Promise<Reply | null> {
+  const path = getKnowledgePath(input);
+
+  if (!path) return null;
+
+  const knowledge = await getKnowledgeFile(path);
+
+  if (!knowledge) return null;
+
+  const answer = extractKnowledgeAnswer(knowledge, input);
+
+  if (!answer) return null;
+
+  return {
+    text: answer,
+  };
 }
 function getReply(input: string): Reply {
   const q = input.toLowerCase().trim();
@@ -572,11 +740,11 @@ export default function PortfolioChatbot() {
     speakingRef.current = false;
     spokenTextRef.current = "";
 
+
     setSpeaking(false);
     setListening(false);
     setVoiceModeSafe(false);
   };
-
   const speakReply = (text: string) => {
     if (
       typeof window === "undefined" ||
@@ -986,8 +1154,7 @@ useEffect(() => {
           ...prev,
           {
             from: "bot",
-            text: `LIVE CYBER INTELLIGENCE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â NVD + CISA KEV
-Updated: ${new Date(data.updated).toLocaleString()}`,
+            text: "LIVE CYBER INTELLIGENCE",
             cyber: data,
           },
         ]);
@@ -1007,8 +1174,12 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
       return;
     }
 
-    setTimeout(() => {
-      const reply = getReply(value);
+    setTimeout(async () => {
+      let reply = await getKnowledgeReply(value);
+
+      if (!reply) {
+        reply = getReply(value);
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -1021,7 +1192,13 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
 
       setThinking(false);
       playReplySound();
-      if (wasVoiceRequest && voiceGenerationRef.current === requestGeneration) speakReply(reply.text);
+
+      if (
+        wasVoiceRequest &&
+        voiceGenerationRef.current === requestGeneration
+      ) {
+        speakReply(reply.text);
+      }
     }, 900);
   };
   const backToMenu = () => {
@@ -1142,13 +1319,13 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
 
             {messages.length > 0 && (
               <div className="orbit-chat-topbar">
-                <button
-                  type="button"
-                  className="orbit-back-button"
-                  onClick={backToMenu}
-                >
-                  Ã¢â€ Â BACK TO MENU
-                </button>
+              <button
+                type="button"
+                className="orbit-back-button"
+                onClick={backToMenu}
+              >
+                ← BACK TO MENU
+              </button>
               </div>
             )}
 
@@ -1161,7 +1338,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
 
                   <div>
                     <h3>
-                      Hey there <span>Ã°Å¸â€˜â€¹</span>
+                      Hey there <span>👋</span>
                     </h3>
 
                     <p>What do you want to know?</p>
@@ -1231,7 +1408,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                       {message.cyber && (
                         <div className="orbit-cyber-feed">
                           <div className="orbit-cyber-feed-head">
-                            <span>ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂÃƒâ€šÃ‚Â LIVE SECURITY FEED</span>
+                  <span>LIVE SECURITY FEED</span>
                             <small>NVD + CISA KEV</small>
                           </div>
 
@@ -1253,11 +1430,11 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                                     {item.vulnerabilityName || item.description}
                                   </h4>
 
-                                  <p>{item.vendor} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {item.product}</p>
+                                    <p>{item.vendor} · {item.product}</p>
 
                                   <div className="orbit-cyber-card-meta">
                                     <span>
-                                      ADDED {item.dateAdded || "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â"}
+                                    ADDED {item.dateAdded || "UNKNOWN"}
                                     </span>
 
                                     <a
@@ -1265,7 +1442,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                                       target="_blank"
                                       rel="noreferrer"
                                     >
-                                      VIEW ADVISORY ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â
+                                      VIEW ADVISORY
                                     </a>
                                   </div>
                                 </div>
@@ -1301,7 +1478,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
                                       target="_blank"
                                       rel="noreferrer"
                                     >
-                                      VIEW CVE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â
+                                      VIEW CVE
                                     </a>
                                   </div>
                                 </div>
@@ -1385,8 +1562,7 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
 
               <button
                 type="button"
-                disabled={thinking}
-                onClick={() => {
+                onClick={async () => {
   if (voiceModeRef.current) {
     closeVoiceMode();
     return;
@@ -1416,3 +1592,33 @@ Updated: ${new Date(data.updated).toLocaleString()}`,
     </>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

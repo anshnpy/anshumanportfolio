@@ -29,5 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "components/PortfolioChatbot.old.tsx", "components/**/*.backup.tsx", "components/**/*.before-*.tsx", "components/**/*.stable-v2.tsx", "components/**/*.voice-*.tsx"]
 }
+

@@ -23,3 +23,16 @@ node_modules
 *.step0-backup.tsx
 
 app/globals.before-opening-intro.css
+
+# Local development / generated files
+.dev.vars
+.wrangler/
+tsconfig.tsbuildinfo
+*.mp3
+
+# Local chatbot backups
+components/PortfolioChatbot.*.tsx
+functions/api/*.disabled
+
+# Next static export output
+out/
