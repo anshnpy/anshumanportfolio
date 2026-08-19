@@ -1,4 +1,11 @@
-﻿import { useEffect, useRef, useState } from "react";
+﻿import { getKnowledgeReply } from "../lib/chatbot/knowledge";
+import {
+  addMessage,
+  createConversationContext,
+  updateConversationContext,
+} from "../lib/chatbot/conversation-manager";
+import { routeIntent } from "../lib/chatbot/intent-router";
+import { useEffect, useRef, useState } from "react";
 import {
   UserRound,
   Code2,
@@ -167,6 +174,7 @@ async function getCyberIntelligence(): Promise<CyberData> {
 
   return response.json();
 }
+/* PHASE2_OLD_KNOWLEDGE_BLOCK_START
 const knowledgeAliases: Record<string, string> = {
   "soc home lab": "/data/projects/soc-home-lab.md",
   "soc lab": "/data/projects/soc-home-lab.md",
@@ -335,6 +343,7 @@ async function getKnowledgeReply(
     text: answer,
   };
 }
+PHASE2_OLD_KNOWLEDGE_BLOCK_END */
 function getReply(input: string): Reply {
   const q = input.toLowerCase().trim();
   const hinglish = isHinglish(input);
@@ -1111,6 +1120,10 @@ useEffect(() => {
     { from: "bot" | "user"; text: string; actions?: Action[]; cyber?: CyberData }[]
   >([]);
 
+  const conversationRef = useRef(
+    createConversationContext()
+  );
+
   useEffect(() => {
     if (!open) return;
 
@@ -1127,6 +1140,27 @@ useEffect(() => {
 
   const sendMessage = async (text = input) => {
     const value = text.trim();
+
+    const intentResult = routeIntent(value);
+
+    conversationRef.current = addMessage(
+      conversationRef.current,
+      "user",
+      value
+    );
+
+    conversationRef.current = updateConversationContext(
+      conversationRef.current,
+      {
+        intent: intentResult.intent,
+        topic: intentResult.topic,
+      }
+    );
+
+    console.log(
+      "CHAT CONTEXT:",
+      conversationRef.current
+    );
 
     if (!value || (thinking && !voiceRequestRef.current)) return;
 
@@ -1175,11 +1209,20 @@ useEffect(() => {
     }
 
     setTimeout(async () => {
-      let reply = await getKnowledgeReply(value);
+      let reply = await getKnowledgeReply(
+        value,
+        conversationRef.current
+      );
 
       if (!reply) {
         reply = getReply(value);
       }
+
+      conversationRef.current = addMessage(
+        conversationRef.current,
+        "assistant",
+        reply.text
+      );
 
       setMessages((prev) => [
         ...prev,
@@ -1592,6 +1635,9 @@ useEffect(() => {
     </>
   );
 }
+
+
+
 
 
 
