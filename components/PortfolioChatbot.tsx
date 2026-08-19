@@ -1176,9 +1176,7 @@ useEffect(() => {
     voiceRequestRef.current = false;
 
     const isCyberNewsRequest =
-      value.toLowerCase().includes("cyber news") ||
-      value.toLowerCase().includes("latest cybersecurity news") ||
-      value.toLowerCase().includes("cybersecurity news");
+      intentResult.intent === "cyber-news";
 
     if (isCyberNewsRequest) {
       try {
