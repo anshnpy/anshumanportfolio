@@ -39,6 +39,20 @@ const knowledgeAliases: Record<string, string> = {
   "career": "/data/career.md",
   "career goal": "/data/career.md",
 
+  "identity": "/data/identity.md",
+  "who is anshuman": "/data/identity.md",
+
+
+  "contact": "/data/contact.md",
+  "contact details": "/data/contact.md",
+  "how to contact": "/data/contact.md",
+
+  "portfolio": "/data/portfolio.md",
+  "portfolio overview": "/data/portfolio.md",
+  "what is this portfolio": "/data/portfolio.md",
+
+  "faq": "/data/faq.md",
+  "frequently asked": "/data/faq.md",
   "profile": "/data/profile.md",
   "about anshuman": "/data/profile.md",
 };
@@ -48,11 +62,68 @@ export function getKnowledgePath(
 ): string | null {
   const q = input.toLowerCase().trim();
 
-  const matches = Object.entries(knowledgeAliases)
-    .filter(([alias]) => q.includes(alias))
-    .sort((a, b) => b[0].length - a[0].length);
+  if (!q) return null;
 
-  return matches[0]?.[1] ?? null;
+  const normalized = q.replace(/\s+/g, " ");
+
+  const matches = Object.entries(knowledgeAliases)
+    .filter(([alias]) => {
+      const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(`\\b${escaped}\\b`, "i");
+
+      return pattern.test(normalized);
+    })
+    .map(([alias, path]) => {
+      const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(`\\b${escaped}\\b`, "i");
+
+      let score = alias.length;
+
+      // Exact phrase match gets the strongest preference.
+      if (normalized === alias) {
+        score += 1000;
+      }
+
+      // Phrase appearing as a clean word-boundary match.
+      if (pattern.test(normalized)) {
+        score += 100;
+      }
+
+      // Project-specific phrases are more valuable than broad topics.
+      if (
+        path.includes("/projects/") &&
+        alias.length >= 6
+      ) {
+        score += 150;
+      }
+
+      // Broad one-word aliases should not easily hijack a specific query.
+      if (
+        alias === "skills" ||
+        alias === "learning" ||
+        alias === "career" ||
+        alias === "profile" ||
+        alias === "portfolio" ||
+        alias === "contact"
+      ) {
+        score -= 40;
+      }
+
+      return {
+        alias,
+        path,
+        score,
+      };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return b.alias.length - a.alias.length;
+    });
+
+  return matches[0]?.path ?? null;
 }
 
 export async function getKnowledgeFile(
@@ -82,16 +153,31 @@ export function extractKnowledgeAnswer(
     .map((section) => section.trim())
     .filter(Boolean);
 
-  const findSection = (...names: string[]) =>
-    sections.find((section) => {
+  const findSection = (...names: string[]) => {
+    const normalizedNames = names.map((name) =>
+      name.toLowerCase().trim()
+    );
+
+    return sections.find((section) => {
       const normalized = section.toLowerCase();
-      return names.some((name) =>
-        normalized.includes(`## ${name}`)
-      );
+
+      return normalizedNames.some((name) => {
+        const heading = normalized.match(/^##\s+(.+)$/m)?.[1]?.trim();
+
+        if (!heading) return false;
+
+        if (heading === name) return true;
+        if (heading.includes(name)) return true;
+        if (name.includes(heading)) return true;
+
+        return false;
+      });
     });
+  };
 
   let preferredSection: string | undefined;
 
+  // Most specific question types first.
   if (
     q.includes("interview") ||
     q.includes("interview answer") ||
@@ -101,6 +187,60 @@ export function extractKnowledgeAnswer(
       "interview explanation"
     );
   } else if (
+    q.includes("tool") ||
+    q.includes("tools") ||
+    q.includes("technology") ||
+    q.includes("technologies") ||
+    q.includes("tech stack") ||
+    q.includes("what did you use")
+  ) {
+    preferredSection = findSection(
+      "tools",
+      "tool",
+      "technologies",
+      "technology",
+      "skills demonstrated",
+      "analysis areas"
+    );
+  } else if (
+    q.includes("objective") ||
+    q.includes("goal") ||
+    q.includes("purpose") ||
+    q.includes("why")
+  ) {
+    preferredSection = findSection(
+      "objective",
+      "goal",
+      "purpose"
+    );
+  } else if (
+    q.includes("how") ||
+    q.includes("workflow") ||
+    q.includes("process") ||
+    q.includes("investigation") ||
+    q.includes("approach") ||
+    q.includes("steps")
+  ) {
+    preferredSection = findSection(
+      "investigation workflow",
+      "analysis workflow",
+      "workflow",
+      "process",
+      "approach"
+    );
+  } else if (
+    q.includes("skill") ||
+    q.includes("skills") ||
+    q.includes("what did he learn") ||
+    q.includes("what was learned") ||
+    q.includes("learned")
+  ) {
+    preferredSection = findSection(
+      "skills demonstrated",
+      "skills",
+      "learning"
+    );
+  } else if (
     q.includes("detail") ||
     q.includes("detailed") ||
     q.includes("deep dive") ||
@@ -108,46 +248,9 @@ export function extractKnowledgeAnswer(
     q.includes("explain fully")
   ) {
     preferredSection = findSection(
-      "detailed answer"
-    );
-  } else if (
-    q.includes("how") ||
-    q.includes("workflow") ||
-    q.includes("process") ||
-    q.includes("investigation") ||
-    q.includes("approach")
-  ) {
-    preferredSection = findSection(
-      "investigation workflow",
-      "analysis workflow"
-    );
-  } else if (
-    q.includes("skill") ||
-    q.includes("skills") ||
-    q.includes("what did he learn") ||
-    q.includes("what was learned")
-  ) {
-    preferredSection = findSection(
-      "skills demonstrated"
-    );
-  } else if (
-    q.includes("objective") ||
-    q.includes("goal") ||
-    q.includes("purpose")
-  ) {
-    preferredSection = findSection(
-      "objective"
-    );
-  } else if (
-    q.includes("tool") ||
-    q.includes("tools") ||
-    q.includes("technology") ||
-    q.includes("technologies")
-  ) {
-    preferredSection = findSection(
-      "tool",
-      "skills demonstrated",
-      "analysis areas"
+      "detailed answer",
+      "detailed explanation",
+      "overview"
     );
   }
 
@@ -156,9 +259,7 @@ export function extractKnowledgeAnswer(
       "short answer",
       "overview"
     );
-  }
-
-  if (!preferredSection) {
+  }  if (!preferredSection) {
     return null;
   }
 
@@ -217,6 +318,11 @@ export async function getKnowledgeReply(
     text: answer,
   };
 }
+
+
+
+
+
 
 
 
