@@ -5,6 +5,8 @@ import {
   updateConversationContext,
 } from "../lib/chatbot/conversation-manager";
 import { routeIntent } from "../lib/chatbot/intent-router";
+import { buildAnswer } from "../lib/chatbot/answer-builder";
+import { createPortfolioActions } from "../lib/chatbot/actions";
 import { useEffect, useRef, useState } from "react";
 import {
   UserRound,
@@ -174,201 +176,20 @@ async function getCyberIntelligence(): Promise<CyberData> {
 
   return response.json();
 }
-/* PHASE2_OLD_KNOWLEDGE_BLOCK_START
-const knowledgeAliases: Record<string, string> = {
-  "soc home lab": "/data/projects/soc-home-lab.md",
-  "soc lab": "/data/projects/soc-home-lab.md",
-  "soc project": "/data/projects/soc-home-lab.md",
 
-  "windows event": "/data/projects/windows-event-log-analysis.md",
-  "windows logs": "/data/projects/windows-event-log-analysis.md",
-  "event logs": "/data/projects/windows-event-log-analysis.md",
-
-  "wireshark": "/data/projects/network-traffic-analysis.md",
-  "packet analysis": "/data/projects/network-traffic-analysis.md",
-  "network traffic": "/data/projects/network-traffic-analysis.md",
-  "network analysis": "/data/projects/network-traffic-analysis.md",
-
-  "phishing": "/data/projects/phishing-email-analysis.md",
-  "phishing email": "/data/projects/phishing-email-analysis.md",
-  "email security": "/data/projects/phishing-email-analysis.md",
-
-  "siem": "/data/projects/siem-log-analysis.md",
-  "siem logs": "/data/projects/siem-log-analysis.md",
-  "log analysis": "/data/projects/siem-log-analysis.md",
-
-  "linux security": "/data/projects/linux-security-practice.md",
-  "linux practice": "/data/projects/linux-security-practice.md",
-
-  "skills": "/data/skills.md",
-  "technologies": "/data/skills.md",
-  "tech stack": "/data/skills.md",
-
-  "learning": "/data/learning.md",
-  "currently learning": "/data/learning.md",
-
-  "career": "/data/career.md",
-  "career goal": "/data/career.md",
-
-  "profile": "/data/profile.md",
-  "about anshuman": "/data/profile.md",
-};
-
-function getKnowledgePath(input: string): string | null {
-  const q = input.toLowerCase().trim();
-
-  const matches = Object.entries(knowledgeAliases)
-    .filter(([alias]) => q.includes(alias))
-    .sort((a, b) => b[0].length - a[0].length);
-
-  return matches[0]?.[1] ?? null;
-}
-
-async function getKnowledgeFile(path: string): Promise<string | null> {
-  try {
-    const response = await fetch(path, {
-      cache: "force-cache",
-    });
-
-    if (!response.ok) return null;
-
-    return await response.text();
-  } catch {
-    return null;
-  }
-}
-
-function extractKnowledgeAnswer(
-  knowledge: string,
-  input: string
-): string | null {
-  const q = input.toLowerCase().trim();
-
-  const sections = knowledge
-    .split(/\n(?=## )/g)
-    .map((section) => section.trim())
-    .filter(Boolean);
-
-  const findSection = (...names: string[]) =>
-    sections.find((section) => {
-      const normalized = section.toLowerCase();
-      return names.some((name) => normalized.includes(`## ${name}`));
-    });
-
-  let preferredSection: string | undefined;
-
-  if (
-    q.includes("interview") ||
-    q.includes("interview answer") ||
-    q.includes("explain for interview")
-  ) {
-    preferredSection = findSection("interview explanation");
-  } else if (
-    q.includes("detail") ||
-    q.includes("detailed") ||
-    q.includes("deep dive") ||
-    q.includes("deep explanation") ||
-    q.includes("explain fully")
-  ) {
-    preferredSection = findSection("detailed answer");
-  } else if (
-    q.includes("how") ||
-    q.includes("workflow") ||
-    q.includes("process") ||
-    q.includes("investigation") ||
-    q.includes("approach")
-  ) {
-    preferredSection = findSection(
-      "investigation workflow",
-      "analysis workflow"
-    );
-  } else if (
-    q.includes("skill") ||
-    q.includes("skills") ||
-    q.includes("what did he learn") ||
-    q.includes("what was learned")
-  ) {
-    preferredSection = findSection("skills demonstrated");
-  } else if (
-    q.includes("objective") ||
-    q.includes("goal") ||
-    q.includes("purpose")
-  ) {
-    preferredSection = findSection("objective");
-  } else if (
-    q.includes("tool") ||
-    q.includes("tools") ||
-    q.includes("technology") ||
-    q.includes("technologies")
-  ) {
-    preferredSection = findSection(
-      "tool",
-      "skills demonstrated",
-      "analysis areas"
-    );
-  }
-
-  if (!preferredSection) {
-    preferredSection = findSection(
-      "short answer",
-      "overview"
-    );
-  }
-
-  if (!preferredSection) {
-    return null;
-  }
-
-  return preferredSection
-    .replace(/^##\s+.*$/m, "")
-    .trim();
-}
-
-async function getKnowledgeReply(
-  input: string
-): Promise<Reply | null> {
-  const path = getKnowledgePath(input);
-
-  if (!path) return null;
-
-  const knowledge = await getKnowledgeFile(path);
-
-  if (!knowledge) return null;
-
-  const answer = extractKnowledgeAnswer(knowledge, input);
-
-  if (!answer) return null;
-
-  return {
-    text: answer,
-  };
-}
-PHASE2_OLD_KNOWLEDGE_BLOCK_END */
 function getReply(input: string): Reply {
   const q = input.toLowerCase().trim();
   const hinglish = isHinglish(input);
 
-  const openCv: Action = {
-    label: "OPEN CV",
-    href: profile.cv,
-  };
+  const portfolioActions = createPortfolioActions(profile);
 
-  const openGithub: Action = {
-    label: "OPEN GITHUB",
-    href: profile.github,
-    external: true,
-  };
+  const {
+    openCv,
+    openGithub,
+    openLinkedin,
+    sendEmail,
+  } = portfolioActions;
 
-  const openLinkedin: Action = {
-    label: "OPEN LINKEDIN",
-    href: profile.linkedin,
-    external: true,
-  };
-
-  const sendEmail: Action = {
-    label: "SEND EMAIL",
-    href: `mailto:${profile.email}`,
-  };
 
   if (
     q.includes("who is anshuman") ||
@@ -1216,6 +1037,12 @@ useEffect(() => {
         reply = getReply(value);
       }
 
+      const answer = buildAnswer(
+        reply.text,
+        reply.actions
+      );
+
+
       conversationRef.current = addMessage(
         conversationRef.current,
         "assistant",
@@ -1226,8 +1053,8 @@ useEffect(() => {
         ...prev,
         {
           from: "bot",
-          text: reply.text,
-          actions: reply.actions,
+          text: answer.text,
+          actions: answer.actions,
         },
       ]);
 
@@ -1238,7 +1065,7 @@ useEffect(() => {
         wasVoiceRequest &&
         voiceGenerationRef.current === requestGeneration
       ) {
-        speakReply(reply.text);
+        speakReply(answer.text);
       }
     }, 900);
   };
@@ -1633,6 +1460,10 @@ useEffect(() => {
     </>
   );
 }
+
+
+
+
 
 
 

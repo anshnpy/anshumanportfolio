@@ -74,6 +74,25 @@ const portfolioPatterns: Array<{
       /\bstudying\b/i,
     ],
   },
+  {
+    topic: "education",
+    patterns: [
+      /\beducation\b/i,
+      /\bdegree\b/i,
+      /\bqualification\b/i,
+      /\bstudy\b/i,
+      /\bbca\b/i,
+    ],
+  },
+  {
+    topic: "contact",
+    patterns: [
+      /\bcontact\b/i,
+      /\breach\b/i,
+      /\bemail\b/i,
+      /\bmail\b/i,
+    ],
+  },
 ];
 
 export function routeIntent(input: string): IntentResult {
@@ -119,3 +138,4 @@ export function routeIntent(input: string): IntentResult {
     confidence: 0.4,
   };
 }
+
