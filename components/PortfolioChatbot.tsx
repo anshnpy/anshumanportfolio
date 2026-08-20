@@ -597,31 +597,61 @@ export default function PortfolioChatbot() {
 
     const voices = window.speechSynthesis.getVoices();
 
-    const preferredVoice =
-      voices.find(
-        (voice) =>
-          voice.lang.toLowerCase() === "en-in"
-      ) ||
-      voices.find(
-        (voice) =>
-          voice.lang.toLowerCase().startsWith("en-in")
-      ) ||
-      voices.find(
-        (voice) =>
-          voice.lang.toLowerCase().startsWith("en-us")
-      ) ||
-      voices.find(
-        (voice) =>
-          voice.lang.toLowerCase().startsWith("en-gb")
-      );
+    const femaleHints = [
+      "female",
+      "samantha",
+      "ava",
+      "sara",
+      "sarah",
+      "karen",
+      "victoria",
+      "susan",
+      "hazel",
+      "zira",
+      "aria",
+      "jenny",
+      "sonia",
+      "libby",
+      "sophie",
+    ];
+
+    const scoreVoice = (voice: SpeechSynthesisVoice) => {
+      const name = voice.name.toLowerCase();
+      const lang = voice.lang.toLowerCase();
+
+      let score = 0;
+
+      if (lang === "en-in") score += 100;
+      else if (lang.startsWith("en-in")) score += 70;
+      else if (lang === "en-us") score += 50;
+      else if (lang.startsWith("en-us")) score += 30;
+
+      if (femaleHints.some((hint) => name.includes(hint))) {
+        score += 80;
+      }
+
+      if (
+        name.includes("natural") ||
+        name.includes("online") ||
+        name.includes("neural")
+      ) {
+        score += 25;
+      }
+
+      return score;
+    };
+
+    const preferredVoice = [...voices].sort(
+      (a, b) => scoreVoice(b) - scoreVoice(a)
+    )[0];
 
     if (preferredVoice) {
       utterance.voice = preferredVoice;
     }
 
     utterance.lang = "en-IN";
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    utterance.rate = 0.91;
+    utterance.pitch = 1.06;
 
     utterance.onstart = () => {
       if (
@@ -1480,6 +1510,8 @@ useEffect(() => {
     </>
   );
 }
+
+
 
 
 
