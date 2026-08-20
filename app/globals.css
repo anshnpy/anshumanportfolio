@@ -3093,12 +3093,25 @@ body { font-family: var(--display); }
 }
 
 .orbit-close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:102;
   width:28px;
   height:28px;
+  min-width:28px;
+  min-height:28px;
+  padding:0;
+  margin:0;
   border:1px solid rgba(255,255,255,.12);
   background:transparent;
   color:#777;
   cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  box-sizing:border-box;
 }
 
 .orbit-close:hover{
@@ -3389,18 +3402,26 @@ body { font-family: var(--display); }
   }
 
   .orbit-chat-window .orbit-close{
-    position:absolute !important;
-    top:10px !important;
-    right:10px !important;
-    z-index:100 !important;
-    width:34px !important;
-    height:34px !important;
-    min-width:34px !important;
-    display:grid !important;
-    place-items:center !important;
-    opacity:1 !important;
-    visibility:visible !important;
-  }
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:102;
+  width:28px;
+  height:28px;
+  min-width:28px;
+  min-height:28px;
+  padding:0;
+  margin:0;
+  border:1px solid rgba(255,255,255,.12);
+  background:transparent;
+  color:#777;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  box-sizing:border-box;
+}
 
   .orbit-chat-header{
     position:relative !important;
@@ -3416,28 +3437,26 @@ body { font-family: var(--display); }
 /* ===== MOBILE CHAT CLOSE BUTTON ï¿½ CLEAN ===== */
 @media (max-width:600px){
   .orbit-chat-window .orbit-close{
-    position:absolute !important;
-    top:10px !important;
-    right:10px !important;
-    z-index:999 !important;
-
-    width:34px !important;
-    height:34px !important;
-    min-width:34px !important;
-    padding:0 !important;
-
-    border:0 !important;
-    outline:0 !important;
-    background:transparent !important;
-    box-shadow:none !important;
-
-    display:grid !important;
-    place-items:center !important;
-
-    color:rgba(244,241,234,.65) !important;
-    font-size:26px !important;
-    line-height:1 !important;
-  }
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:102;
+  width:28px;
+  height:28px;
+  min-width:28px;
+  min-height:28px;
+  padding:0;
+  margin:0;
+  border:1px solid rgba(255,255,255,.12);
+  background:transparent;
+  color:#777;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  box-sizing:border-box;
+}
 
   .orbit-chat-window .orbit-close:hover{
     border:0 !important;
@@ -4799,4 +4818,67 @@ body { font-family: var(--display); }
   font-size:7px;
   letter-spacing:.18em;
 }
+
+
+/* ===== DESKTOP CHAT MAXIMIZE ===== */
+.orbit-maximize{
+  position:absolute;
+  top:10px;
+  right:50px;
+  z-index:101;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  min-width:28px;
+  padding:0;
+  margin:0;
+  border:1px solid rgba(255,255,255,.12);
+  background:transparent;
+  color:#777;
+  cursor:pointer;
+  line-height:1;
+  box-sizing:border-box;
+}
+
+.orbit-maximize:hover{
+  color:#c8ff00;
+  border-color:#c8ff00;
+}
+
+.orbit-chat-window-maximized{
+  width:min(1200px, 92vw) !important;
+  height:min(88vh, 900px) !important;
+}
+
+/* Mobile: maximize hidden */
+@media (max-width: 800px){
+  .orbit-maximize{
+  position:absolute;
+  top:10px;
+  right:50px;
+  z-index:101;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  min-width:28px;
+  padding:0;
+  margin:0;
+  border:1px solid rgba(255,255,255,.12);
+  background:transparent;
+  color:#777;
+  cursor:pointer;
+  line-height:1;
+  box-sizing:border-box;
+}
+
+  .orbit-chat-window-maximized{
+    width:auto !important;
+    height:auto !important;
+  }
+}
+
 

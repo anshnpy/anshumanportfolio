@@ -464,6 +464,7 @@ function getReply(input: string): Reply {
 
 export default function PortfolioChatbot() {
   const [open, setOpen] = useState(false);
+  const [chatMaximized, setChatMaximized] = useState(false);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const [listening, setListening] = useState(false);
@@ -1139,7 +1140,7 @@ useEffect(() => {
             onClick={() => { closeVoiceMode(); setOpen(false); }}
           />
 
-          <section className="orbit-chat-window">
+          <section className={`orbit-chat-window${chatMaximized ? " orbit-chat-window-maximized" : ""}`}>
 
       {voiceMode && (
         <div className="orbit-voice-mode">
@@ -1183,6 +1184,16 @@ useEffect(() => {
                 <span />
                 ONLINE
               </div>
+
+              <button
+                type="button"
+                className="orbit-maximize"
+                onClick={() => setChatMaximized((value) => !value)}
+                aria-label={chatMaximized ? "Restore chat" : "Maximize chat"}
+                title={chatMaximized ? "Restore" : "Maximize"}
+              >
+                <span aria-hidden="true">{chatMaximized ? "⤢" : "⛶"}</span>
+              </button>
 
               <button
                 type="button"
@@ -1469,6 +1480,8 @@ useEffect(() => {
     </>
   );
 }
+
+
 
 
 
