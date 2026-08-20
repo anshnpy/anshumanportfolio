@@ -937,9 +937,13 @@ useEffect(() => {
 }, [voiceMode]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+
+
   const [messages, setMessages] = useState<
     { from: "bot" | "user"; text: string; actions?: Action[]; cyber?: CyberData }[]
   >([]);
+
+
 
   const conversationRef = useRef(
     createConversationContext()
@@ -984,6 +988,11 @@ useEffect(() => {
     );
 
     if (!value || (thinking && !voiceRequestRef.current)) return;
+
+    const isFirstMessage = messages.length === 0;
+    const fridayWelcome =
+      "Hiiii! I'm FRIDAY, Anshuman's AI Assistant. How can I help you today?";
+
 
     setMessages((prev) => [
       ...prev,
@@ -1206,7 +1215,7 @@ useEffect(() => {
 
                   <div>
                     <h3>
-                      Hey there <span>👋</span>
+                      Hiiii! I'm FRIDAY, Anshuman's AI Assistant. <span>👋</span>
                     </h3>
 
                     <p>What do you want to know?</p>
@@ -1460,6 +1469,9 @@ useEffect(() => {
     </>
   );
 }
+
+
+
 
 
 
