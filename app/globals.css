@@ -4882,3 +4882,24 @@ body { font-family: var(--display); }
 }
 
 
+
+.project-github-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-top:14px;
+  padding:10px 14px;
+  border:1px solid rgba(200,255,0,.35);
+  color:#c8ff00;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.project-github-button:hover{
+  border-color:#c8ff00;
+  background:rgba(200,255,0,.08);
+}
