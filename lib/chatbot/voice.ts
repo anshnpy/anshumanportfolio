@@ -38,30 +38,76 @@ export function getPreferredSpeechVoice(
 
   const voices = window.speechSynthesis.getVoices();
 
-  return (
-    voices.find(
-      (voice) =>
-        voice.lang.toLowerCase() ===
-        preference.primaryLanguage?.toLowerCase()
-    ) ??
-    voices.find(
-      (voice) =>
-        voice.lang.toLowerCase() ===
-        preference.fallbackLanguage?.toLowerCase()
-    ) ??
-    voices.find((voice) =>
-      voice.lang
-        .toLowerCase()
-        .startsWith(
-          preference.primaryLanguage
-            ?.split("-")[0]
-            .toLowerCase() ?? "en"
-        )
-    ) ??
-    null
-  );
+  if (!voices.length) return null;
+
+  const primary = preference.primaryLanguage?.toLowerCase() ?? "en-in";
+  const fallback = preference.fallbackLanguage?.toLowerCase() ?? "en-us";
+
+  const femaleHints = [
+    "female",
+    "samantha",
+    "ava",
+    "sara",
+    "sarah",
+    "karen",
+    "victoria",
+    "susan",
+    "hazel",
+    "zira",
+    "aria",
+    "jenny",
+    "sonia",
+    "libby",
+    "sophie",
+  ];
+
+  const scoreVoice = (voice: SpeechSynthesisVoice) => {
+    const name = voice.name.toLowerCase();
+    const lang = voice.lang.toLowerCase();
+
+    let score = 0;
+
+    if (lang === primary) score += 100;
+    if (lang.startsWith(primary.split("-")[0])) score += 60;
+    if (lang === fallback) score += 50;
+    if (lang.startsWith(fallback.split("-")[0])) score += 30;
+
+    if (femaleHints.some((hint) => name.includes(hint))) {
+      score += 80;
+    }
+
+    if (
+      name.includes("natural") ||
+      name.includes("online") ||
+      name.includes("neural")
+    ) {
+      score += 25;
+    }
+
+    return score;
+  };
+
+  return [...voices]
+    .map((voice) => ({
+      voice,
+      score: scoreVoice(voice),
+    }))
+    .sort((a, b) => b.score - a.score)[0]?.voice ?? null;
 }
 
+export function prepareSpeechText(text: string): string {
+  return text
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*\/\s*/g, " or ")
+    .replace(/\s*·\s*/g, ", ")
+    .replace(/\s*•\s*/g, ", ")
+    .replace(/\s*[-–—]\s*/g, ", ")
+    .replace(/\bSOC\b/g, "S O C")
+    .replace(/\bSIEM\b/g, "S I E M")
+    .replace(/\bCV\b/g, "C V")
+    .trim();
+}
 export function cancelSpeech(): void {
   if (
     typeof window === "undefined" ||
@@ -121,3 +167,4 @@ export function speakText(
 
   return utterance;
 }
+

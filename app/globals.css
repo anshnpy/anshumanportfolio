@@ -1,4 +1,4 @@
-﻿body{background:#080808!important;color:#f4f1ea!important;} h1,h2,h3{color:#f4f1ea;} h1 span,h2 span{color:#c8ff3d;}
+body{background:#080808!important;color:#f4f1ea!important;} h1,h2,h3{color:#f4f1ea;} h1 span,h2 span{color:#c8ff3d;}
 :root { --background:#080808; --foreground:#f4f1ea; --lime:#c8ff3d; --muted:#858580; --panel:#141414; --border:#292929; --line:rgba(244,241,234,.13); --color-background:#080808; --color-foreground:#f4f1ea; }
 :root { --background: #080808; --foreground: #f4f1ea; --lime: #c8ff3d; --muted: #858580; --panel: #141414; --border: #292929; --line: rgba(244,241,234,.13); }
 * { box-sizing: border-box; }
@@ -926,7 +926,7 @@ body { font-family: var(--display); }
     padding-bottom: 90px !important;
   }
 }
-/* ABOUT â€” FINAL SPACING */
+/* ABOUT — FINAL SPACING */
 .about {
   padding-top: clamp(80px, 9vw, 130px) !important;
   padding-bottom: clamp(80px, 9vw, 130px) !important;
@@ -1431,7 +1431,7 @@ body { font-family: var(--display); }
 
 
 /* =========================================================
-   ABOUT SECTION â€” FINAL VISUAL POLISH
+   ABOUT SECTION — FINAL VISUAL POLISH
    Reference-inspired 3-column framed composition
    ========================================================= */
 
@@ -1474,7 +1474,7 @@ body { font-family: var(--display); }
 .about-grid::after{right:-4px !important}
 
 
-/* LEFT â€” MAIN MESSAGE */
+/* LEFT — MAIN MESSAGE */
 
 .about-grid > .about-heading{
   grid-column:1 !important;
@@ -1513,7 +1513,7 @@ body { font-family: var(--display); }
 }
 
 
-/* CENTER â€” QUICK CONTACT */
+/* CENTER — QUICK CONTACT */
 
 .about-grid > .mini-contact{
   grid-column:2 !important;
@@ -1561,7 +1561,7 @@ body { font-family: var(--display); }
 }
 
 
-/* RIGHT â€” PROFILE */
+/* RIGHT — PROFILE */
 
 .about-grid > .about-side{
   grid-column:3 !important;
@@ -1848,7 +1848,7 @@ body { font-family: var(--display); }
 }
 
 
-/* ===== QUICK CONTACT REMOVED â€” 2 COLUMN ABOUT ===== */
+/* ===== QUICK CONTACT REMOVED — 2 COLUMN ABOUT ===== */
 
 .about-grid{
   grid-template-columns:minmax(0,1.05fr) minmax(0,1fr) !important;
@@ -1902,7 +1902,7 @@ body { font-family: var(--display); }
 
 
 /* =========================================================
-   CONTACT MODAL â€” QUICK CONTACT POPUP
+   CONTACT MODAL — QUICK CONTACT POPUP
    ========================================================= */
 
 .contact-modal{

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import PortfolioChatbot from "../components/PortfolioChatbot";
@@ -6,12 +6,12 @@ import { ArrowDownRight, ArrowUpRight, ChevronDown, GitBranch, Mail, Menu, MoveU
 
 const navItems = ['Home', 'About', 'Skills', 'Projects', 'Experiments', 'Journey', 'Contact']
 const skillGroups = [
-  { number: '01', name: 'NETWORKING', skills: 'TCP/IP Ã‚Â· DNS Ã‚Â· HTTP Ã‚Â· WIRESHARK Ã‚Â· PACKET ANALYSIS', focus: 'NETWORK DEFENSE / PACKET ANALYSIS' },
-  { number: '02', name: 'LINUX', skills: 'BASH Ã‚Â· HARDENING Ã‚Â· LOGS Ã‚Â· PERMISSIONS Ã‚Â· SYSTEMS', focus: 'SYSTEM SECURITY / HARDENING' },
-  { number: '03', name: 'PYTHON', skills: 'AUTOMATION Ã‚Â· PARSING Ã‚Â· SOCKETS Ã‚Â· SCRIPTS Ã‚Â· APIs', focus: 'SECURITY AUTOMATION / SCRIPTING' },
-  { number: '04', name: 'SECURITY', skills: 'THREAT MODELING Ã‚Â· IOCS Ã‚Â· OSINT Ã‚Â· INCIDENT RESPONSE', focus: 'DEFENSIVE SECURITY / INVESTIGATION' },
-  { number: '05', name: 'SIEM', skills: 'LOG ANALYSIS Ã‚Â· DETECTION Ã‚Â· ALERTS Ã‚Â· SPLUNK Ã‚Â· ELASTIC', focus: 'SOC / DETECTION / ALERT TRIAGE' },
-  { number: '06', name: 'WEB', skills: 'HTTP Ã‚Â· AUTH Ã‚Â· OWASP Ã‚Â· JAVASCRIPT Ã‚Â· APIS', focus: 'WEB SECURITY / APPLICATIONS' },
+  { number: '01', name: 'NETWORKING', skills: 'TCP/IP · DNS · HTTP · WIRESHARK · PACKET ANALYSIS', focus: 'NETWORK DEFENSE / PACKET ANALYSIS' },
+  { number: '02', name: 'LINUX', skills: 'BASH · HARDENING · LOGS · PERMISSIONS · SYSTEMS', focus: 'SYSTEM SECURITY / HARDENING' },
+  { number: '03', name: 'PYTHON', skills: 'AUTOMATION · PARSING · SOCKETS · SCRIPTS · APIs', focus: 'SECURITY AUTOMATION / SCRIPTING' },
+  { number: '04', name: 'SECURITY', skills: 'THREAT MODELING · IOCS · OSINT · INCIDENT RESPONSE', focus: 'DEFENSIVE SECURITY / INVESTIGATION' },
+  { number: '05', name: 'SIEM', skills: 'LOG ANALYSIS · DETECTION · ALERTS · SPLUNK · ELASTIC', focus: 'SOC / DETECTION / ALERT TRIAGE' },
+  { number: '06', name: 'WEB', skills: 'HTTP · AUTH · OWASP · JAVASCRIPT · APIS', focus: 'WEB SECURITY / APPLICATIONS' },
 ]
 const projects = [
   { number: '01', title: 'SOC HOME LAB', description: 'A practical Security Operations environment for monitoring, detection and incident investigation.', tags: 'SOC / MONITORING / BLUE TEAM', type: 'soc', github: 'https://github.com/anshnpy/soc-home-lab' },
@@ -28,7 +28,7 @@ function SystemVisual({ type = 'hero' }: { type?: string }) {
   if (type === 'soc') return <div className="project-visual soc-visual"><div className="soc-chart"><span /><span /><span /><span /><span /><span /><span /></div><div className="soc-readout"><small>EVENTS / 24H</small><strong>1,284</strong><b>+18.4%</b></div><i className="soc-pulse" /><div className="mini-status">ALERTS <b>07</b><br />HEALTH <b>99%</b></div></div>
   if (type === 'windows') return <div className="project-visual windows-visual"><div className="event-top"><span>EVENT VIEWER / SECURITY</span><b>FILTER: AUTH</b></div>{['4624  SUCCESS LOGON', '4625  FAILED LOGON', '4672  ADMIN PRIVILEGE', '4634  LOGOFF'].map((event, index) => <div className="event-row" key={event}><i className={index === 1 ? 'warn' : ''} /><span>{event}</span><small>02:{14 + index}:26</small></div>)}<div className="timeline-line" /></div>
   if (type === 'siem') return <div className="project-visual siem-visual"><div className="siem-head"><span>SIEM / CORRELATION</span><b>LIVE</b></div><div className="log-stack"><p><i /> AUTH_FAILURE <small>HIGH</small></p><p><i /> DNS_ANOMALY <small>MED</small></p><p><i /> PROCESS_START <small>LOW</small></p><p><i /> IOC_MATCH <small>HIGH</small></p></div><div className="siem-bars"><i /><i /><i /><i /><i /><i /><i /></div></div>
-  if (type === 'linux') return <div className="project-visual linux-visual"><div className="terminal-head"><span>root@anshuman:~</span><b>SECURE</b></div><div className="terminal-lines"><p><em>$</em> sudo systemctl status ssh</p><p className="lime-line">Ã¢â€”Â active (running)</p><p><em>$</em> ls -la /secure/logs</p><p>-rw------- <span>auth.log</span></p><p><em>$</em> chmod 700 /home/user</p></div><div className="permission-wheel">700</div></div>
+  if (type === 'linux') return <div className="project-visual linux-visual"><div className="terminal-head"><span>root@anshuman:~</span><b>SECURE</b></div><div className="terminal-lines"><p><em>$</em> sudo systemctlstatus ssh</p><p className="lime-line">? active (running)</p><p><em>$</em> ls -la /secure/logs</p><p>-rw------- <span>auth.log</span></p><p><em>$</em> chmod 700 /home/user</p></div><div className="permission-wheel">700</div></div>
   return <div className="system-visual" aria-label="Abstract active digital network system"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" /><div className="network-globe">{Array.from({ length: 34 }, (_, index) => <i className={`globe-node globe-node-${index + 1}`} key={index} />)}<div className="globe-meridian meridian-one" /><div className="globe-meridian meridian-two" /><div className="globe-latitude latitude-one" /><div className="globe-latitude latitude-two" /><i className="globe-signal signal-one" /><i className="globe-signal signal-two" /><i className="globe-signal signal-three" /></div><div className="globe-hud-ring"><span>NETWORK</span><span>SECURE</span><span>LIVE</span></div><i className="globe-data-packet packet-one" /><i className="globe-data-packet packet-two" /><i className="globe-data-packet packet-three" /><i className="data-point point-one" /><i className="data-point point-two" /><i className="data-point point-three" /><div className="system-grid" /><div className="system-card card-top"><span className="status-dot" /> SYSTEM STATUS <b>ACTIVE</b></div><div className="system-clock"><span>LOCAL TIME</span><strong id="live-clock">00:00:00</strong><small>DELHI / INDIA</small></div><div className="system-card card-bottom">SECURING SYSTEMS<br />BUILDING SOLUTIONS<br />CREATING IMPACT</div><span className="axis axis-x">X / 04</span><span className="axis axis-y">Y / 09</span></div>
 }
 
@@ -60,7 +60,7 @@ export default function Page() {
     <PortfolioChatbot />
     <main id="top">
       <section id="home" className="hero page-pad"><div className="hero-copy reveal"><div className="eyebrow"><span className="lime-dot" /> HELLO, I&apos;M</div><h1>ANSHUMAN<br /><span>PANDEY</span></h1><p className="hero-intro">I build digital experiences, security systems and things that shouldn&apos;t look boring.</p><div className="hero-actions"><a className="lime-button" href="#projects">EXPLORE WORK <ArrowUpRight size={16} /></a><a className="text-button" href="/resume.pdf" target="_blank" rel="noopener noreferrer">DOWNLOAD CV <ArrowDownRight size={16} /></a></div><div className="identity-labels"><span>CYBERSECURITY</span><span>SECURITY OPERATIONS</span><span>CREATIVE TECHNOLOGY</span></div></div><div className="hero-art reveal"><SystemVisual /></div><div className="scroll-cue"><span>SCROLL TO EXPLORE</span><ArrowDownRight size={16} /></div></section>
-      <section className="stats page-pad reveal"><div><strong>06<span>+</span></strong><small>SECURITY PROJECTS</small></div><div><strong>06</strong><small>CORE SKILL AREAS</small></div><div><strong>100<span>%</span></strong><small>HANDS-ON FOCUS</small></div><div><strong>âˆž</strong><small>ALWAYS LEARNING</small></div><div><strong>24<span>/7</span></strong><small>CURIOSITY MODE</small></div></section>
+      <section className="stats page-pad reveal"><div><strong>06<span>+</span></strong><small>SECURITY PROJECTS</small></div><div><strong>06</strong><small>CORE SKILL AREAS</small></div><div><strong>100<span>%</span></strong><small>HANDS-ON FOCUS</small></div><div><strong>∞</strong><small>ALWAYS LEARNING</small></div><div><strong>24<span>/7</span></strong><small>CURIOSITY MODE</small></div></section>
       <section id="about" className="about page-pad section-pad"><div className="section-kicker reveal"><span>01</span><span>ABOUT / THE PERSON BEHIND THE SYSTEM</span></div><div className="about-grid"><div className="about-heading reveal">
   <h2>I LIKE BUILDING<br />THINGS THAT<br />MAKE PEOPLE<br />LOOK <span>TWICE.</span></h2>
 
@@ -76,7 +76,7 @@ export default function Page() {
     <span>INCIDENT RESPONSE</span>
     <span>ALWAYS LEARNING</span>
   </div>
-</div><div className="about-side reveal"><div className="profile-portrait"><img src="/anshuman-profile.png" alt="Portrait of Anshuman Pandey" /><div className="portrait-scan" /><span>PROFILE / 2026</span><i /></div><div className="about-description"><span>CYBERSECURITY / SOC</span><p className="profile-intro"><span>01 / SYSTEM STATUS</span><strong>DEFENDING THE<br />DIGITAL LAYER.</strong><em>Monitoring signals. Investigating threats.<br />Learning how attacks move â€” and how to stop them.</em><small>STATUS: BUILDING&nbsp;&nbsp; // &nbsp;&nbsp;MODE: BLUE TEAM</small></p></div><div className="profile-data"><div><small>BASED IN</small><b>DELHI, INDIA</b></div><div><small>FOCUS</small><b>CYBERSECURITY / SOC</b></div><div><small>CURRENTLY</small><b>BUILDING &amp; LEARNING</b></div><div><small>EDUCATION</small><b>BCA GRADUATE</b></div></div></div></div></section>
+</div><div className="about-side reveal"><div className="profile-portrait"><img src="/anshuman-profile.png" alt="Portrait of Anshuman Pandey" /><div className="portrait-scan" /><span>PROFILE / 2026</span><i /></div><div className="about-description"><span>CYBERSECURITY / SOC</span><p className="profile-intro"><span>01 / SYSTEM STATUS</span><strong>DEFENDING THE<br />DIGITAL LAYER.</strong><em>Monitoring signals. Investigating threats.<br />Learning how attacks move — and how to stop them.</em><small>STATUS: BUILDING&nbsp;&nbsp; // &nbsp;&nbsp;MODE: BLUE TEAM</small></p></div><div className="profile-data"><div><small>BASED IN</small><b>DELHI, INDIA</b></div><div><small>FOCUS</small><b>CYBERSECURITY / SOC</b></div><div><small>CURRENTLY</small><b>BUILDING &amp; LEARNING</b></div><div><small>EDUCATION</small><b>BCA GRADUATE</b></div></div></div></div></section>
       <section id="skills" className="skills page-pad section-pad"><div className="section-kicker reveal"><span>02</span><span>TOOLS / THE WORKBENCH</span></div><div className="skills-head reveal"><h2>WHAT I<br /><span>WORK WITH</span></h2><p>Curious by default. Practical by design.<br />Always one layer deeper.</p></div><div className="skill-list reveal">{skillGroups.map((skill, index) => <button key={skill.name} className={`skill-row ${activeSkill === index ? 'skill-active' : ''}`} onMouseEnter={() => setActiveSkill(index)} onFocus={() => setActiveSkill(index)} onClick={() => setActiveSkill(index)}><span>{skill.number}</span><strong>{skill.name}</strong><em>{activeSkill === index ? skill.skills : 'EXPLORE'}</em>{activeSkill === index && <small className="skill-focus">FOCUS: {skill.focus}</small>}<ChevronDown size={18} /></button>)}</div></section>
       <section id="projects" className="projects page-pad section-pad"><div className="section-kicker reveal"><span>03</span><span>SELECTED WORK / RECENT BUILDS</span></div><div className="section-title reveal"><h2>SELECTED <span>WORK.</span></h2><a href="#projects">VIEW ALL WORK <ArrowUpRight size={16} /></a></div><div className="project-grid">{projects.map((project) => <a className="project-card reveal" href="#projects" onClick={(event) => { event.preventDefault(); setActiveProject(project) }} key={project.number}><div className="project-art"><SystemVisual type={project.type} /></div><div className="project-meta"><span>{project.number}</span><span>{project.tags}</span><span className="project-meta-status">BUILDING</span><MoveUpRight size={18} /></div><h3>{project.title}</h3><p>{project.description}</p><span className="project-explore">EXPLORE PROJECT <MoveUpRight size={14} /></span></a>)}</div></section>
       <section id="experiments" className="experiments page-pad section-pad"><div className="section-kicker reveal"><span>04</span><span>EXPERIMENTS / VISIBLE LEARNING</span></div><div className="experiment-intro reveal"><h2>BUILD.<br /><span>BREAK.</span><br />LEARN.</h2><p>Small systems, interfaces and security experiments.<br />Because learning should be visible.</p></div><div className="experiment-list reveal">{['SECURITY DASHBOARD', 'NETWORK VISUALIZER', 'THREAT MONITOR', 'TERMINAL INTERFACE'].map((item, index) => <a href="#experiments" onClick={(event) => event.preventDefault()} key={item}><span>0{index + 1}</span><strong>{item}</strong><small className="experiment-status">BUILD QUEUE</small><i><ArrowUpRight size={18} /></i></a>)}</div></section>
@@ -86,7 +86,7 @@ export default function Page() {
           <div className="project-modal-window" onClick={(event) => event.stopPropagation()}>
             <div className="project-modal-head">
               <span>PROJECT / {activeProject.number}</span>
-              <button type="button" onClick={() => setActiveProject(null)}>CLOSE Ã—</button>
+              <button type="button" onClick={() => setActiveProject(null)}>CLOSE ×</button>
             </div>
 
             <div className="project-modal-grid">
@@ -95,7 +95,7 @@ export default function Page() {
               </div>
 
               <div className="project-modal-info">
-                <span className="project-modal-status">â— BUILDING</span>
+                 <span className="project-modal-status">? BUILDING</span>
                 <h2>{activeProject.title}</h2>
                 <p>{activeProject.description}</p>
 
@@ -132,23 +132,22 @@ export default function Page() {
           <div className="contact-modal-window">
             <div className="contact-modal-head">
               <span>QUICK CONTACT</span>
-              <button type="button" onClick={() => setContactOpen(false)}>CLOSE Ã—</button>
+              <button type="button" onClick={() => setContactOpen(false)}>CLOSE ×</button>
             </div>
             <p>OPEN CHANNEL / SEND A MESSAGE DIRECTLY.</p>
             <form className="contact-modal-form" onSubmit={async (e) => { e.preventDefault(); const form = e.currentTarget; const response = await fetch("https://formspree.io/f/mvkpbayg", { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } }); if (response.ok) { form.reset(); setContactSent(true); const audioContext = new AudioContext(); const oscillator = audioContext.createOscillator(); const gain = audioContext.createGain(); oscillator.type = "triangle"; oscillator.frequency.setValueAtTime(520, audioContext.currentTime); oscillator.frequency.setValueAtTime(780, audioContext.currentTime + 0.09); gain.gain.setValueAtTime(0.0001, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.055, audioContext.currentTime + 0.015); gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.09); gain.gain.setValueAtTime(0.0001, audioContext.currentTime + 0.09); gain.gain.exponentialRampToValueAtTime(0.065, audioContext.currentTime + 0.105); gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.22); oscillator.connect(gain); gain.connect(audioContext.destination); oscillator.start(); oscillator.stop(audioContext.currentTime + 0.22); setTimeout(() => { setContactSent(false); audioContext.close(); }, 3500); } }}>
               <input name="name" type="text" placeholder="YOUR NAME" required />
               <input name="email" type="email" placeholder="YOUR EMAIL" required />
               <textarea name="message" placeholder="YOUR MESSAGE" required />
-              <input type="hidden" name="_subject" value="New Portfolio Message â€” Anshuman Pandey" />
-              <button type="submit">SEND MESSAGE â†—</button>{contactSent && <div className="contact-success">âœ“ MESSAGE SENT SUCCESSFULLY</div>}
+              <input type="hidden" name="_subject" value="New Portfolio Message — Anshuman Pandey" />
+              <button type="submit">SEND MESSAGE ↗</button>{contactSent && <div className="contact-success">✓ MESSAGE SENT SUCCESSFULLY</div>}
             </form>
           </div>
         </div>
       )}</main>
-    <footer className="footer page-pad"><a className="brand" href="#top">AP<span>.</span></a><span>BUILT WITH CURIOSITY. SECURED WITH INTENT.</span><span>Ã‚Â© 2026 ANSHUMAN PANDEY</span></footer>
+    <footer className="footer page-pad"><a className="brand" href="#top">AP<span>.</span></a><span>BUILT WITH CURIOSITY. SECURED WITH INTENT.</span><span>© 2026 ANSHUMAN PANDEY</span></footer>
   </>
 }
-
 
 
 
