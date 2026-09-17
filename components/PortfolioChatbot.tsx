@@ -66,7 +66,7 @@ const profile = {
   career:
     "Anshuman is building a career in Cybersecurity and Security Operations, with a long-term goal of growing toward Security Engineering.",
 
-  cv: "/resume.pdf",
+  cv: "/cv.pdf",
 
   email: "anshn.py@gmail.com",
 
@@ -1510,6 +1510,7 @@ useEffect(() => {
     </>
   );
 }
+
 
 
 
