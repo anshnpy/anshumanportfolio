@@ -1286,7 +1286,7 @@ useEffect(() => {
                 aria-label={chatMaximized ? "Restore chat" : "Maximize chat"}
                 title={chatMaximized ? "Restore" : "Maximize"}
               >
-                <span aria-hidden="true">{chatMaximized ? "â¤¢" : "â›¶"}</span>
+                <span aria-hidden="true">{chatMaximized ? "⤢" : "⛶"}</span>
               </button>
 
               <button
@@ -1306,7 +1306,7 @@ useEffect(() => {
                 className="orbit-back-button"
                 onClick={backToMenu}
               >
-                â† BACK TO MENU
+                ← BACK TO MENU
               </button>
               </div>
             )}
@@ -1320,7 +1320,7 @@ useEffect(() => {
 
                   <div>
                     <h3>
-                      Hiiii! I'm FRIDAY, Anshuman's AI Assistant. <span>ðŸ‘‹</span>
+                      Hiiii! I'm FRIDAY, Anshuman's AI Assistant. <span>👋</span>
                     </h3>
 
                     <p>What do you want to know?</p>
@@ -1412,7 +1412,7 @@ useEffect(() => {
                                     {item.vulnerabilityName || item.description}
                                   </h4>
 
-                                    <p>{item.vendor} Â· {item.product}</p>
+                                    <p>{item.vendor} · {item.product}</p>
 
                                   <div className="orbit-cyber-card-meta">
                                     <span>
