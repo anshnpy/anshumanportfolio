@@ -1,4 +1,4 @@
-﻿export type KnowledgeAction = {
+export type KnowledgeAction = {
   label: string;
   href: string;
 };
@@ -29,6 +29,25 @@ const knowledgeAliases: Record<string, string> = {
   "linux security": "/data/projects/linux-security-practice.md",
   "linux practice": "/data/projects/linux-security-practice.md",
 
+  "completed projects": "/data/completed-projects.md",
+  "completed builds": "/data/completed-projects.md",
+  "finished projects": "/data/completed-projects.md",
+
+  "soc home lab": "/data/projects/soc-home-lab.md",
+  "wazuh soc": "/data/projects/soc-home-lab.md",
+  "soc dashboard": "/data/projects/soc-home-lab.md",
+
+  "incident response platform": "/data/projects/incident-response-platform.md",
+  "incident response": "/data/projects/incident-response-platform.md",
+  "investigation platform": "/data/projects/incident-response-platform.md",
+
+  "malware analysis sandbox": "/data/projects/malware-analysis-sandbox.md",
+  "malware sandbox": "/data/projects/malware-analysis-sandbox.md",
+  "malware analysis": "/data/projects/malware-analysis-sandbox.md",
+
+  "persisthawk": "/data/projects/persisthawk.md",
+  "persist hawk": "/data/projects/persisthawk.md",
+  "persistence hunter": "/data/projects/persisthawk.md",
   "skills": "/data/skills.md",
   "technologies": "/data/skills.md",
   "tech stack": "/data/skills.md",
@@ -65,6 +84,17 @@ export function getKnowledgePath(
   if (!q) return null;
 
   const normalized = q.replace(/\s+/g, " ");
+
+  if (
+    normalized.includes("completed") &&
+    (
+      normalized.includes("project") ||
+      normalized.includes("build") ||
+      normalized.includes("portfolio")
+    )
+  ) {
+    return "/data/completed-projects.md";
+  }
 
   const matches = Object.entries(knowledgeAliases)
     .filter(([alias]) => {

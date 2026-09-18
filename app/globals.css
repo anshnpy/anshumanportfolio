@@ -7818,3 +7818,26 @@ body { font-family: var(--display); }
   opacity: 1;
   transform: none;
 }
+
+/* HERO CV BUTTON — CLEAN SECONDARY CTA */
+.hero-actions .text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 14px 17px;
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  font: 10px var(--technical);
+  line-height: 1;
+  letter-spacing: .1em;
+  transition: border-color .25s ease, color .25s ease, background .25s ease, transform .25s ease;
+}
+
+.hero-actions .text-button:hover {
+  color: var(--lime);
+  border-color: var(--lime);
+  background: rgba(200,255,61,.04);
+  transform: translateY(-2px);
+}
