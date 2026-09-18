@@ -71,7 +71,7 @@ export default function Page() {
 
   useEffect(() => {
    const timer = window.setTimeout(() => setIntro(false), 5000)
-    const reveals = document.querySelectorAll('.reveal')
+    const reveals = document.querySelectorAll('.reveal, .micro-reveal')
     const observer = new IntersectionObserver((entries) => entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('is-visible')), { threshold: 0.12 })
     reveals.forEach((element) => observer.observe(element))
     const moveCursor = (event: MouseEvent) => setCursor((current) => ({ ...current, x: event.clientX, y: event.clientY }))
@@ -129,7 +129,7 @@ export default function Page() {
         <div className="micro-card-grid">
           {microProjects.map((project) => (
             <a
-              className={`micro-card micro-${project.accent}`}
+              className={`micro-card micro-${project.accent} micro-reveal`}
               key={project.number}
               href={project.github || undefined}
               target={project.github ? "_blank" : undefined}

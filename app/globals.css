@@ -7789,3 +7789,32 @@ body { font-family: var(--display); }
 .micro-card-footer .micro-card-lock {
   font-family: var(--technical) !important;
 }
+
+/* MICRO CARD REVEAL — MATCH PORTFOLIO */
+@keyframes microCardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.micro-card {
+  opacity: 0;
+  animation: microCardReveal .8s ease forwards;
+}
+
+/* MICRO CARD REVEAL — SAME AS PORTFOLIO */
+.micro-reveal {
+  opacity: 0;
+  transform: translateY(25px);
+  transition: opacity .8s ease, transform .8s ease;
+}
+
+.micro-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
