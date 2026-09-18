@@ -1,8 +1,8 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import PortfolioChatbot from "../components/PortfolioChatbot";
-import { ArrowDownRight, ArrowUpRight, ChevronDown, GitBranch, Mail, Menu, MoveUpRight, Users, X } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, ChevronDown, GitBranch, Mail, Menu, MoveUpRight, Users, X, Lock} from 'lucide-react'
 
 const navItems = ['Home', 'About', 'Skills', 'Projects', 'Experiments', 'Journey', 'Contact']
 const skillGroups = [
@@ -26,6 +26,13 @@ const projects = [
   { number: '10', title: 'CLOUD SECURITY MONITORING LAB', description: 'A cloud-security monitoring environment focused on identity, activity logs, configuration changes, permissions and suspicious behavior.', tags: 'CLOUD / SECURITY / MONITORING', type: 'cloud', status: 'BUILDING'  , image: '/projects/10-cloud-security.png' },
 ]
 
+const microProjects = [
+  { number: '01', name: 'PersistHawk', image: '/projects/micro-01-persisthawk.png', category: 'PERSISTENCE / LINUX', description: 'Linux Persistence & LOLBin Hunter', status: 'COMPLETED', github: 'https://github.com/anshnpy/PersistHawk', detail: 'Detects persistence mechanisms and abnormal LOLBin usage on Linux.', accent: 'lime' },
+  { number: '02', name: 'ProcTrace', image: '/projects/micro-02-proctrace.png', category: 'PROCESS / LINUX', description: 'Linux Process Behavior Analyzer / Mini-EDR', status: 'BUILDING', detail: 'Monitors process behavior and highlights suspicious activity.', accent: 'blue' },
+  { number: '03', name: 'ForenSight', image: '/projects/micro-03-forensight.png', category: 'DFIR / FORENSICS', description: 'Linux DFIR Evidence & Timeline Engine', status: 'BUILDING', detail: 'Collects evidence, builds timelines and supports forensic investigation.', accent: 'purple' },
+  { number: '04', name: 'WebCorrelix', image: '/projects/micro-04-webcorrelix.png', category: 'WEB / DETECTION', description: 'Web Attack Detection & Correlation Engine', status: 'BUILDING', detail: 'Analyzes web activity and correlates attack patterns for faster triage.', accent: 'orange' },
+  { number: '05', name: 'DNSpectra', image: '/projects/micro-05-dnspectra.png', category: 'DNS / THREAT HUNTING', description: 'Linux DNS Threat Hunting Engine', status: 'BUILDING', detail: 'Analyzes DNS traffic and logs to identify suspicious domains and anomalies.', accent: 'cyan' },
+]
 function SystemVisual({ type = 'hero' }: { type?: string }) {
   if (type === 'network' || type === 'network-ids') return <div className="project-visual network-visual"><div className="network-head"><span>NETWORK / IDS</span><b>LIVE</b></div><div className="network-path"><span className="net-node n-internet">INTERNET</span><i className="net-link" /><span className="net-node n-firewall">FIREWALL</span><i className="net-link" /><span className="net-node n-ids">IDS</span><i className="net-link" /><span className="net-node n-network">NETWORK</span></div><div className="network-alert"><small>THREAT DETECTION</small><strong>24</strong><b>ALERTS</b></div><div className="network-packets"><i /><i /><i /><i /><i /></div><div className="network-footer"><span>PACKETS <b>1.2K</b></span><span>STATUS <b>MONITORING</b></span><span>HEALTH <b>86%</b></span></div></div>
 
@@ -100,6 +107,85 @@ export default function Page() {
 </div><div className="about-side reveal"><div className="profile-portrait"><img src="/anshuman-profile.png" alt="Portrait of Anshuman Pandey" /><div className="portrait-scan" /><span>PROFILE / 2026</span><i /></div><div className="about-description"><span>CYBERSECURITY / SOC</span><p className="profile-intro"><span>01 / SYSTEM STATUS</span><strong>DEFENDING THE<br />DIGITAL LAYER.</strong><em>Monitoring signals. Investigating threats.<br />Learning how attacks move — and how to stop them.</em><small>STATUS: BUILDING&nbsp;&nbsp; // &nbsp;&nbsp;MODE: BLUE TEAM</small></p></div><div className="profile-data"><div><small>BASED IN</small><b>DELHI, INDIA</b></div><div><small>FOCUS</small><b>CYBERSECURITY / SOC</b></div><div><small>CURRENTLY</small><b>BUILDING &amp; LEARNING</b></div><div><small>EDUCATION</small><b>BCA GRADUATE</b></div></div></div></div></section>
       <section id="skills" className="skills page-pad section-pad"><div className="section-kicker reveal"><span>02</span><span>TOOLS / THE WORKBENCH</span></div><div className="skills-head reveal"><h2>WHAT I<br /><span>WORK WITH</span></h2><p>Curious by default. Practical by design.<br />Always one layer deeper.</p></div><div className="skill-list reveal">{skillGroups.map((skill, index) => <button key={skill.name} className={`skill-row ${activeSkill === index ? 'skill-active' : ''}`} onMouseEnter={() => setActiveSkill(index)} onFocus={() => setActiveSkill(index)} onClick={() => setActiveSkill(index)}><span>{skill.number}</span><strong>{skill.name}</strong><em>{activeSkill === index ? skill.skills : 'EXPLORE'}</em>{activeSkill === index && <small className="skill-focus">FOCUS: {skill.focus}</small>}<ChevronDown size={18} /></button>)}</div></section>
       <section id="projects" className="projects page-pad section-pad"><div className="section-kicker reveal"><span>03</span><span>SELECTED WORK / RECENT BUILDS</span></div><div className="section-title reveal"><h2>SELECTED <span>WORK.</span></h2><a href="#projects">VIEW ALL WORK <ArrowUpRight size={16} /></a></div><div className="project-grid">{projects.map((project) => <a className="project-card reveal" href="#projects" onClick={(event) => { event.preventDefault(); setActiveProject(project) }} key={project.number}><div className="project-art"><img className="project-card-image" src={project.image} alt={project.title} loading="lazy" /></div><div className="project-meta"><span>{project.number}</span><span>{project.tags}</span><span className="project-meta-status">{project.status}</span><MoveUpRight size={18} /></div><h3>{project.title}</h3><p>{project.description}</p><span className="project-explore">EXPLORE PROJECT <MoveUpRight size={14} /></span></a>)}</div></section>
+      <section id="micro-builds" className="micro-builds page-pad section-pad">
+        <div className="section-kicker reveal">
+          <span>03A</span>
+          <span>MICRO BUILDS / SECURITY TOOLS</span>
+        </div>
+
+        <div className="micro-head reveal">
+          <div className="micro-title-block">
+            <h2>MICRO <span>PROJECTS.</span></h2>
+          </div>
+
+          
+
+          <div className="micro-index">
+            <span>[ 05 TOOLS ]</span>
+            <small>FOCUSED SECURITY BUILDS</small>
+          </div>
+        </div>
+
+        <div className="micro-divider reveal">
+          <span>LINUX</span>
+          <i />
+          <span>DFIR</span>
+          <i />
+          <span>WEB SECURITY</span>
+          <i />
+          <span>THREAT HUNTING</span>
+        </div>
+
+        <div className="micro-card-grid">
+          {microProjects.map((project) => (
+            <a
+              className={`micro-card micro-${project.accent}`}
+              key={project.number}
+              href={project.github || undefined}
+              target={project.github ? "_blank" : undefined}
+              rel={project.github ? "noopener noreferrer" : undefined}
+              aria-disabled={!project.github}
+              onClick={(event) => {
+                if (!project.github) event.preventDefault()
+              }}
+            >
+              <div className="micro-card-top">
+                <span>{project.number}</span>
+                <small>MICRO BUILD</small>
+              </div>
+
+              <div className="micro-card-visual">
+                {project.image ? (
+                  <img className="micro-card-image" src={project.image} alt={project.name} loading="lazy" />
+                ) : (
+                  <div className="micro-placeholder">
+                    <span>{project.name.slice(0, 2).toUpperCase()}</span>
+                    <i />
+                    <b />
+                  </div>
+                )}
+              </div>
+
+              <div className="micro-card-category">{project.category}</div>
+
+              <h3>{project.name}</h3>
+
+              <p className="micro-card-title">{project.description}</p>
+
+              <p className="micro-card-detail">{project.detail}</p>
+
+              <div className="micro-card-footer">
+                <span>VIEW GITHUB</span>
+                {project.github ? (
+                  <span className="micro-card-arrow">↗</span>
+                ) : (
+                  <Lock className="micro-card-lock" size={13} strokeWidth={2} aria-hidden="true" />
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
       <section id="experiments" className="experiments page-pad section-pad"><div className="section-kicker reveal"><span>04</span><span>EXPERIMENTS / VISIBLE LEARNING</span></div><div className="experiment-intro reveal"><h2>BUILD.<br /><span>BREAK.</span><br />LEARN.</h2><p>Small systems, interfaces and security experiments.<br />Because learning should be visible.</p></div><div className="experiment-list reveal">{['SECURITY DASHBOARD', 'NETWORK VISUALIZER', 'THREAT MONITOR', 'TERMINAL INTERFACE'].map((item, index) => <a href="#experiments" onClick={(event) => event.preventDefault()} key={item}><span>0{index + 1}</span><strong>{item}</strong><small className="experiment-status">BUILD QUEUE</small><i><ArrowUpRight size={18} /></i></a>)}</div></section>
       <section id="journey" className="journey page-pad section-pad"><div className="section-kicker reveal"><span>05</span><span>JOURNEY / THE NEXT LAYER</span></div><div className="journey-grid"><h2 className="reveal">ALWAYS<br /><span>LEARNING.</span></h2><div className="learning-list reveal"><p>CURRENT FOCUS / CYBERSECURITY + SOC</p><div className="journey-status"><span>01</span><strong>BLUE TEAM OPERATIONS</strong><small>CURRENTLY LEARNING</small></div><div className="journey-status"><span>02</span><strong>LOG ANALYSIS</strong><small>CURRENTLY LEARNING</small></div><div className="journey-status"><span>03</span><strong>SECURITY FUNDAMENTALS</strong><small>CURRENTLY LEARNING</small></div><p className="journey-next">EXPLORING NEXT</p>{['THREAT HUNTING', 'MALWARE ANALYSIS', 'CLOUD SECURITY'].map((item, index) => <div key={item}><span>0{index + 1}</span><strong>{item}</strong><ArrowUpRight size={16} /></div>)}</div></div></section>
       <section id="contact" className="contact page-pad section-pad"><div className="contact-content reveal"><div className="section-kicker"><span>06</span><span>CONTACT / START A CONVERSATION</span></div><h2>LET&apos;S MAKE<br />SOMETHING <span>INTERESTING.</span></h2><button className="lime-button contact-button" type="button" onClick={() => setContactOpen(true)}>LET&apos;S CONNECT <ArrowUpRight size={18} /></button></div><div className="contact-links reveal"><a href="mailto:anshn.py@gmail.com"><Mail size={18} /><span>EMAIL</span><b>anshn.py@gmail.com</b><ArrowUpRight size={18} /></a><a href="/cv.pdf" target="_blank" rel="noopener noreferrer"><ArrowDownRight size={18} /><span>RESUME</span><b>VIEW / DOWNLOAD CV</b><ArrowUpRight size={18} /></a><a href="https://www.linkedin.com/in/anshuman-pandey-b847b5287" target="_blank" rel="noreferrer"><Users size={18} /><span>LINKEDIN</span><b>CONNECT WITH ME</b><ArrowUpRight size={18} /></a><a href="https://github.com/anshnpy" target="_blank" rel="noreferrer"><GitBranch size={18} /><span>GITHUB</span><b>SEE THE BUILDS</b><ArrowUpRight size={18} /></a><div className="contact-location"><span>LOCATION</span><b>DELHI, INDIA</b></div></div></section>      {activeProject && (
@@ -112,11 +198,17 @@ export default function Page() {
 
             <div className="project-modal-grid">
               <div className="project-modal-art">
-                <img className="project-modal-image" src={activeProject.image} alt={activeProject.title} />
+                {activeProject.image ? (
+                  <img className="project-modal-image" src={activeProject.image} alt={activeProject.title} />
+                ) : (
+                  <div className="project-modal-micro-placeholder">
+                    <span>MICRO PROJECT</span>
+                    <strong>{activeProject.title}</strong>
+                  </div>
+                )}
               </div>
 
               <div className="project-modal-info">
-                 <span className="project-modal-status">? BUILDING</span>
                 <h2>{activeProject.title}</h2>
                 <p>{activeProject.description}</p>
 
