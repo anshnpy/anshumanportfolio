@@ -126,16 +126,6 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="micro-divider reveal">
-          <span>LINUX</span>
-          <i />
-          <span>DFIR</span>
-          <i />
-          <span>WEB SECURITY</span>
-          <i />
-          <span>THREAT HUNTING</span>
-        </div>
-
         <div className="micro-card-grid">
           {microProjects.map((project) => (
             <a

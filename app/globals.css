@@ -7696,3 +7696,96 @@ body { font-family: var(--display); }
 .micro-card[aria-disabled="false"]:hover {
   color: inherit;
 }
+/* MICRO PROJECTS — TYPOGRAPHY MATCH WITH SELECTED WORK */
+.micro-title-block h2 {
+  font-family: var(--display) !important;
+  font-weight: 600 !important;
+  font-size: clamp(55px, 9vw, 135px) !important;
+  line-height: .85 !important;
+  letter-spacing: -.09em !important;
+  text-transform: uppercase;
+}
+
+.micro-card h3 {
+  font-family: var(--display) !important;
+  font-weight: 600 !important;
+  font-size: clamp(20px, 2vw, 28px) !important;
+  line-height: 1 !important;
+  letter-spacing: -.06em !important;
+  text-transform: uppercase;
+}
+
+.micro-card-title {
+  font-family: var(--display) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.micro-card-category {
+  font-family: var(--technical) !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .08em !important;
+}
+
+.micro-card-footer {
+  font-family: var(--technical) !important;
+  font-size: 9px !important;
+  letter-spacing: .14em !important;
+}
+
+.micro-index {
+  font-family: var(--technical) !important;
+  font-size: 10px !important;
+}
+
+/* MICRO CARDS — INTERNAL TYPOGRAPHY MATCH */
+.micro-card-top {
+  font-family: var(--technical) !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .08em !important;
+}
+
+.micro-card-category {
+  font-family: var(--technical) !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .08em !important;
+}
+
+.micro-card h3 {
+  font-family: var(--display) !important;
+  font-weight: 600 !important;
+  font-size: clamp(20px, 2vw, 28px) !important;
+  line-height: 1 !important;
+  letter-spacing: -.06em !important;
+  text-transform: uppercase !important;
+}
+
+.micro-card-title {
+  font-family: var(--display) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  letter-spacing: normal !important;
+}
+
+.micro-card-detail {
+  font-family: var(--display) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  letter-spacing: normal !important;
+}
+
+.micro-card-footer {
+  font-family: var(--technical) !important;
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+}
+
+.micro-card-footer .micro-card-arrow,
+.micro-card-footer .micro-card-lock {
+  font-family: var(--technical) !important;
+}
