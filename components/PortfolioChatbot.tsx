@@ -1,4 +1,4 @@
-﻿import { getKnowledgeReply } from "../lib/chatbot/knowledge";
+import { getKnowledgeReply } from "../lib/chatbot/knowledge";
 import {
   addMessage,
   createConversationContext,
@@ -476,6 +476,7 @@ export default function PortfolioChatbot() {
     setVoiceMode(value);
   };
   const [speaking, setSpeaking] = useState(false);
+  const replyAudioContextRef = useRef<AudioContext | null>(null);
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const voiceRequestRef = useRef(false);
@@ -988,13 +989,76 @@ useEffect(() => {
       block: "end",
     });
   }, [messages, thinking, open]);
+  const primeReplyAudio = () => {
+    if (typeof window === "undefined") return;
+
+    try {
+      if (!replyAudioContextRef.current) {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as typeof window & {
+            webkitAudioContext?: typeof AudioContext;
+          }).webkitAudioContext;
+
+        if (!AudioCtx) return;
+
+        replyAudioContextRef.current = new AudioCtx();
+      }
+
+      if (replyAudioContextRef.current.state === "suspended") {
+        void replyAudioContextRef.current.resume();
+      }
+    } catch {}
+  };
+
   const playReplySound = () => {
-    const audio = new Audio("/message-sent.wav");
-    audio.volume = 0.18;
-    audio.play().catch(() => {});
+    const ctx = replyAudioContextRef.current;
+
+    if (!ctx) return;
+
+    const play = () => {
+      try {
+        const now = ctx.currentTime;
+        const master = ctx.createGain();
+
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.exponentialRampToValueAtTime(0.045, now + 0.01);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + 0.30);
+        master.connect(ctx.destination);
+
+        [
+          [659.25, 0, 0.16],
+          [783.99, 0.07, 0.18],
+          [1046.5, 0.14, 0.16],
+        ].forEach(([frequency, start, duration]) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = "sine";
+          osc.frequency.value = frequency;
+
+          gain.gain.setValueAtTime(0.0001, now + start);
+          gain.gain.exponentialRampToValueAtTime(0.5, now + start + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+
+          osc.connect(gain);
+          gain.connect(master);
+
+          osc.start(now + start);
+          osc.stop(now + start + duration + 0.02);
+        });
+      } catch {}
+    };
+
+    if (ctx.state === "suspended") {
+      void ctx.resume().then(play).catch(() => {});
+    } else {
+      play();
+    }
   };
 
   const sendMessage = async (text = input) => {
+    primeReplyAudio();
     const value = text.trim();
 
     const intentResult = routeIntent(value);
