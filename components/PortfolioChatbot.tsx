@@ -1,4 +1,4 @@
-import { getKnowledgeReply } from "../lib/chatbot/knowledge";
+﻿import { getKnowledgeReply } from "../lib/chatbot/knowledge";
 import {
   addMessage,
   createConversationContext,
@@ -1202,7 +1202,7 @@ useEffect(() => {
         <button
           type="button"
           className="orbit-chat-node"
-          onClick={() => setOpen(true)}
+          onClick={() => { primeReplyAudio(); setOpen(true); }}
           aria-label="Open portfolio chat"
         >
           <span className="orbit-ring orbit-ring-1" />
@@ -1286,7 +1286,7 @@ useEffect(() => {
                 aria-label={chatMaximized ? "Restore chat" : "Maximize chat"}
                 title={chatMaximized ? "Restore" : "Maximize"}
               >
-                <span aria-hidden="true">{chatMaximized ? "⤢" : "⛶"}</span>
+                <span aria-hidden="true">{chatMaximized ? "â¤¢" : "â›¶"}</span>
               </button>
 
               <button
@@ -1306,7 +1306,7 @@ useEffect(() => {
                 className="orbit-back-button"
                 onClick={backToMenu}
               >
-                ← BACK TO MENU
+                â† BACK TO MENU
               </button>
               </div>
             )}
@@ -1320,7 +1320,7 @@ useEffect(() => {
 
                   <div>
                     <h3>
-                      Hiiii! I'm FRIDAY, Anshuman's AI Assistant. <span>👋</span>
+                      Hiiii! I'm FRIDAY, Anshuman's AI Assistant. <span>ðŸ‘‹</span>
                     </h3>
 
                     <p>What do you want to know?</p>
@@ -1412,7 +1412,7 @@ useEffect(() => {
                                     {item.vulnerabilityName || item.description}
                                   </h4>
 
-                                    <p>{item.vendor} · {item.product}</p>
+                                    <p>{item.vendor} Â· {item.product}</p>
 
                                   <div className="orbit-cyber-card-meta">
                                     <span>
@@ -1574,6 +1574,7 @@ useEffect(() => {
     </>
   );
 }
+
 
 
 
