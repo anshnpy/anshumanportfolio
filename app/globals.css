@@ -7869,7 +7869,7 @@ body { font-family: var(--display); }
   background: rgba(200,255,61,.04);
 }
 
-/* VIEW ALL WORK � LIME FINISH */
+/* VIEW ALL WORK - LIME FINISH */
 .project-view-toggle button {
   color: var(--lime);
   border: 1px solid var(--lime);
@@ -7892,4 +7892,39 @@ body { font-family: var(--display); }
 
 .project-view-toggle button:hover svg {
   transform: translate(3px,-3px);
+}
+
+/* VIEW ALL WORK - PREMIUM ANIMATION */
+.project-view-toggle button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.project-view-toggle button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(200,255,61,.18) 50%,
+    transparent 75%
+  );
+  transform: translateX(-120%);
+  transition: transform .6s ease;
+  z-index: -1;
+}
+
+.project-view-toggle button:hover::before {
+  transform: translateX(120%);
+}
+
+.project-view-toggle button:active {
+  transform: translateY(0) scale(.97);
+}
+
+.project-view-toggle button:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 5px;
 }
