@@ -3434,7 +3434,7 @@ body { font-family: var(--display); }
   }
 }
 
-/* ===== MOBILE CHAT CLOSE BUTTON Ã¯Â¿Â½ CLEAN ===== */
+/* ===== MOBILE CHAT CLOSE BUTTON — CLEAN ===== */
 @media (max-width:600px){
   .orbit-chat-window .orbit-close{
   position:absolute;
@@ -7840,4 +7840,56 @@ body { font-family: var(--display); }
   border-color: var(--lime);
   background: rgba(200,255,61,.04);
   transform: translateY(-2px);
+}
+
+.project-view-toggle {
+  display: flex;
+  justify-content: center;
+  margin-top: 42px;
+}
+
+.project-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font: 10px var(--technical);
+  letter-spacing: .08em;
+  cursor: pointer;
+  transition: color .3s, border-color .3s, background .3s;
+}
+
+.project-view-toggle button:hover {
+  color: var(--lime);
+  border-color: var(--lime);
+  background: rgba(200,255,61,.04);
+}
+
+/* VIEW ALL WORK � LIME FINISH */
+.project-view-toggle button {
+  color: var(--lime);
+  border: 1px solid var(--lime);
+  background: rgba(200,255,61,.025);
+  box-shadow: 0 0 0 rgba(200,255,61,0);
+  transition: all .3s ease;
+}
+
+.project-view-toggle button:hover {
+  background: var(--lime);
+  color: #080808;
+  box-shadow: 0 0 28px rgba(200,255,61,.22);
+  transform: translateY(-2px);
+}
+
+.project-view-toggle button svg {
+  color: inherit;
+  transition: transform .3s ease;
+}
+
+.project-view-toggle button:hover svg {
+  transform: translate(3px,-3px);
 }
