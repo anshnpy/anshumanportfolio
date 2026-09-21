@@ -26,20 +26,42 @@ export default function AIChat() {
   const speak = (text: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return
 
-    window.speechSynthesis.cancel()
+    const synth = window.speechSynthesis
+    synth.cancel()
 
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = 0.95
-    utterance.pitch = 1
-    utterance.volume = 1
+    const speakNow = () => {
+      const utterance = new SpeechSynthesisUtterance(text)
+      const voices = synth.getVoices()
 
-    utterance.onstart = () => setSpeaking(true)
-    utterance.onend = () => setSpeaking(false)
-    utterance.onerror = () => setSpeaking(false)
+      const voice =
+        voices.find(v => /Microsoft (Aria|Jenny|Zira)|Google US English/i.test(v.name)) ??
+        voices.find(v => v.lang.toLowerCase().startsWith("en-us")) ??
+        voices.find(v => v.lang.toLowerCase().startsWith("en"))
 
-    window.speechSynthesis.speak(utterance)
+      if (voice) {
+        utterance.voice = voice
+        utterance.lang = voice.lang
+      } else {
+        utterance.lang = "en-US"
+      }
+
+      utterance.rate = 0.9
+      utterance.pitch = 0.95
+      utterance.volume = 1
+
+      utterance.onstart = () => setSpeaking(true)
+      utterance.onend = () => setSpeaking(false)
+      utterance.onerror = () => setSpeaking(false)
+
+      synth.speak(utterance)
+    }
+
+    if (synth.getVoices().length) {
+      speakNow()
+    } else {
+      window.setTimeout(speakNow, 500)
+    }
   }
-
   const sendMessage = async (text?: string) => {
     const message = (text ?? input).trim()
 
@@ -236,7 +258,7 @@ export default function AIChat() {
               title="Speak"
               type="button"
             >
-              {listening ? "●" : "🎙"}
+              {listening ? "●" : "🎙"}
             </button>
 
             <input
