@@ -1,4 +1,4 @@
-export const dynamic = "force-static";
+﻿export const dynamic = "force-static";
 
 import { NextResponse } from "next/server";
 
@@ -35,14 +35,14 @@ export async function GET() {
         Accept: "application/json",
         "User-Agent": "Anshuman-Portfolio-Cyber-Feed/1.0",
       },
-      cache: "force-cache",
+      cache: "no-store",
     }),
     fetch(cisaUrl, {
       headers: {
         Accept: "application/json",
         "User-Agent": "Mozilla/5.0 Anshuman-Portfolio-Cyber-Feed/1.0",
       },
-      cache: "force-cache",
+      cache: "no-store",
     }),
   ]);
 

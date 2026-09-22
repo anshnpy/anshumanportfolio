@@ -1,0 +1,5303 @@
+﻿
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\app\api\cyber\route.ts ====================
+
+export const dynamic = "force-static";
+
+import { NextResponse } from "next/server";
+
+
+
+type NvdCve = {
+  cve: {
+    id: string;
+    published?: string;
+    lastModified?: string;
+    descriptions?: Array<{ lang: string; value: string }>;
+  };
+};
+
+export async function GET() {
+  const now = new Date();
+  const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const nvdUrl =
+    "https://services.nvd.nist.gov/rest/json/cves/2.0/?" +
+    new URLSearchParams({
+      pubStartDate: start.toISOString(),
+      pubEndDate: now.toISOString(),
+      resultsPerPage: "12",
+      startIndex: "0",
+    }).toString();
+
+  const cisaUrl =
+    "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
+
+  const [nvdResult, cisaResult] = await Promise.allSettled([
+    fetch(nvdUrl, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Anshuman-Portfolio-Cyber-Feed/1.0",
+      },
+      cache: "force-cache",
+    }),
+    fetch(cisaUrl, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0 Anshuman-Portfolio-Cyber-Feed/1.0",
+      },
+      cache: "force-cache",
+    }),
+  ]);
+
+  const vulnerabilities: Array<{
+    id: string;
+    description: string;
+    url: string;
+    published?: string | null;
+    lastModified?: string | null;
+    vendor?: string;
+    product?: string;
+    vulnerabilityName?: string;
+  }> = [];
+
+  const exploited: Array<{
+    id: string;
+    description: string;
+    url: string;
+    vendor?: string;
+    product?: string;
+    vulnerabilityName?: string;
+    dateAdded?: string;
+    requiredAction?: string;
+    dueDate?: string;
+  }> = [];
+
+  if (
+    nvdResult.status === "fulfilled" &&
+    nvdResult.value.ok
+  ) {
+    try {
+      const data = await nvdResult.value.json();
+      const items: NvdCve[] = Array.isArray(data?.vulnerabilities)
+        ? data.vulnerabilities
+        : [];
+
+      for (const item of items) {
+        const cve = item?.cve;
+        if (!cve?.id) continue;
+
+        const description =
+          cve.descriptions?.find((d) => d.lang === "en")?.value ||
+          cve.descriptions?.[0]?.value ||
+          "No description available.";
+
+        vulnerabilities.push({
+          id: cve.id,
+          description,
+          url: `https://nvd.nist.gov/vuln/detail/${cve.id}`,
+          published: cve.published ?? null,
+          lastModified: cve.lastModified ?? null,
+          vendor: "NVD",
+          product: "Vulnerability Database",
+        });
+      }
+    } catch {}
+  }
+
+  if (
+    cisaResult.status === "fulfilled" &&
+    cisaResult.value.ok
+  ) {
+    try {
+      const data = await cisaResult.value.json();
+      const items = Array.isArray(data?.vulnerabilities)
+        ? data.vulnerabilities
+        : [];
+
+      for (const item of items.slice(-12).reverse()) {
+        if (!item?.cveID) continue;
+
+        exploited.push({
+          id: item.cveID,
+          description:
+            item.shortDescription ||
+            item.vulnerabilityName ||
+            "Known exploited vulnerability.",
+          url: `https://nvd.nist.gov/vuln/detail/${item.cveID}`,
+          vendor: item.vendorProject || "Unknown vendor",
+          product: item.product || "Unknown product",
+          vulnerabilityName:
+            item.vulnerabilityName || item.shortDescription,
+          dateAdded: item.dateAdded || "",
+          requiredAction: item.requiredAction || "",
+          dueDate: item.dueDate || "",
+        });
+      }
+    } catch {}
+  }
+
+  if (
+    vulnerabilities.length === 0 &&
+    exploited.length === 0
+  ) {
+    return NextResponse.json(
+      {
+        error: "Cyber intelligence sources unavailable.",
+        updated: now.toISOString(),
+        sources: {
+          nvd: nvdUrl,
+          cisaKev: cisaUrl,
+        },
+        vulnerabilities: [],
+        exploited: [],
+      },
+      { status: 503 }
+    );
+  }
+
+  return NextResponse.json({
+    updated: now.toISOString(),
+    sources: {
+      nvd: nvdUrl,
+      cisaKev: cisaUrl,
+    },
+    vulnerabilities: vulnerabilities.slice(0, 6),
+    exploited: exploited.slice(0, 6),
+  });
+}
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\app\layout.tsx ====================
+
+import { Analytics } from '@vercel/analytics/next'
+import type { Metadata, Viewport } from 'next'
+import { Barlow_Condensed, IBM_Plex_Mono } from 'next/font/google'
+import './globals.css'
+
+const display = Barlow_Condensed({ subsets: ['latin'], variable: '--font-display', weight: ['400', '500', '600', '700'] })
+const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-technical', weight: ['400', '500'] })
+
+export const metadata: Metadata = {
+  title: 'Anshuman Pandey â€” Cybersecurity / Creative Technology',
+  description: 'Portfolio of Anshuman Pandey, an aspiring cybersecurity and SOC professional building digital experiences, security systems and things that should not look boring.',
+  generator: 'v0.app',
+}
+
+export const viewport: Viewport = {
+  colorScheme: 'dark',
+  themeColor: '#080808',
+  width: 'device-width',
+  initialScale: 1,
+}
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="en" className={`bg-background ${display.variable} ${mono.variable}`}><body className="antialiased">{children}{process.env.NODE_ENV === 'production' && <Analytics />}</body></html>
+}
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\app\page.tsx ====================
+
+'use client'
+
+import { useEffect, useState } from 'react'
+import PortfolioChatbot from "../components/PortfolioChatbot";
+import { ArrowDownRight, ArrowUpRight, ChevronDown, GitBranch, Mail, Menu, MoveUpRight, Users, X, Lock} from 'lucide-react'
+
+const navItems = ['Home', 'About', 'Skills', 'Projects', 'Experiments', 'Journey', 'Contact']
+const skillGroups = [
+  { number: '01', name: 'NETWORKING', skills: 'TCP/IP \u2022 DNS \u2022 HTTP \u2022 WIRESHARK \u2022 PACKET ANALYSIS', focus: 'NETWORK DEFENSE / PACKET ANALYSIS' },
+  { number: '02', name: 'LINUX', skills: 'BASH \u2022 HARDENING \u2022 LOGS \u2022 PERMISSIONS \u2022 SYSTEMS', focus: 'SYSTEM SECURITY / HARDENING' },
+  { number: '03', name: 'PYTHON', skills: 'AUTOMATION \u2022 PARSING \u2022 SOCKETS \u2022 SCRIPTS \u2022 APIs', focus: 'SECURITY AUTOMATION / SCRIPTING' },
+  { number: '04', name: 'SECURITY', skills: 'THREAT MODELING \u2022 IOCS \u2022 OSINT \u2022 INCIDENT RESPONSE', focus: 'DEFENSIVE SECURITY / INVESTIGATION' },
+  { number: '05', name: 'SIEM', skills: 'LOG ANALYSIS \u2022 DETECTION \u2022 ALERTS \u2022 SPLUNK \u2022 ELASTIC', focus: 'SOC / DETECTION / ALERT TRIAGE' },
+  { number: '06', name: 'WEB', skills: 'HTTP \u2022 AUTH \u2022 OWASP \u2022 JAVASCRIPT \u2022 APIS', focus: 'WEB SECURITY / APPLICATIONS' },
+]
+const projects = [
+  { number: '01', title: 'SOC HOME LAB / SIEM DASHBOARD', description: 'A practical Security Operations environment for monitoring, detection, SIEM workflows and incident investigation.', tags: 'SOC / SIEM / MONITORING / BLUE TEAM', type: 'soc', github: 'https://github.com/anshnpy/soc-home-lab', status: 'COMPLETED'  , image: '/projects/01-soc-home-lab.png' },
+  { number: '02', title: 'INCIDENT RESPONSE & INVESTIGATION PLATFORM', description: 'A structured platform for alert triage, investigation, evidence handling, timelines, IOCs and incident response workflows.', tags: 'INCIDENT RESPONSE / INVESTIGATION / DFIR', type: 'incident', status: 'COMPLETED', github: 'https://github.com/anshnpy/incident-response-platform'  , image: '/projects/02-incident-response.png' },
+  { number: '03', title: 'MALWARE ANALYSIS SANDBOX', github: 'https://github.com/anshnpy/malware-analysis-sandbox', description: 'An isolated malware-analysis environment for safe static analysis, behavioral observation, network monitoring and IOC extraction.', tags: 'MALWARE / SANDBOX / ANALYSIS', type: 'malware', status: 'COMPLETED'  , image: '/projects/03-malware-analysis.png' },
+  { number: '04', title: 'NETWORK IDS & SECURITY MONITORING', description: 'A network-defense lab for traffic visibility, intrusion detection, suspicious activity monitoring and alert investigation.', tags: 'NETWORK / IDS / MONITORING', type: 'network-ids', status: 'BUILDING'  , image: '/projects/04-network-ids.png' },
+  { number: '05', title: 'MITRE ATT&CK ATTACK SIMULATION LAB', description: 'An authorized lab for simulating defensive-security scenarios, generating telemetry and mapping observed behavior to MITRE ATT&CK.', tags: 'MITRE ATT&CK / SIMULATION / DETECTION', type: 'mitre', status: 'BUILDING'  , image: '/projects/05-mitre-attack.png' },
+  { number: '06', title: 'AI SECURITY ASSISTANT / SOC COPILOT', description: 'An AI-assisted security workspace for alert explanation, log analysis, IOC extraction, investigation guidance and report generation.', tags: 'AI / SOC / SECURITY AUTOMATION', type: 'ai', status: 'BUILDING'  , image: '/projects/06-ai-soc-copilot.png' },
+  { number: '07', title: 'DIGITAL FORENSICS & DFIR PLATFORM', description: 'A forensic investigation workflow for evidence handling, artifact analysis, timeline reconstruction and incident reporting.', tags: 'DFIR / FORENSICS / INVESTIGATION', type: 'dfir', status: 'BUILDING'  , image: '/projects/07-dfir.png' },
+  { number: '08', title: 'THREAT INTELLIGENCE PLATFORM', description: 'A threat-intelligence workspace for IOC collection, enrichment, scoring, relationships and analyst-focused investigation.', tags: 'THREAT INTEL / IOCS / ENRICHMENT', type: 'network', status: 'BUILDING'  , image: '/projects/08-threat-intel.png' },
+  { number: '09', title: 'SOAR / SECURITY AUTOMATION PLATFORM', description: 'A security-automation platform for alert-driven playbooks, enrichment, investigation workflows and repeatable SOC actions.', tags: 'SOAR / AUTOMATION / PLAYBOOKS', type: 'soar', status: 'BUILDING'  , image: '/projects/09-soar.png' },
+  { number: '10', title: 'CLOUD SECURITY MONITORING LAB', description: 'A cloud-security monitoring environment focused on identity, activity logs, configuration changes, permissions and suspicious behavior.', tags: 'CLOUD / SECURITY / MONITORING', type: 'cloud', status: 'BUILDING'  , image: '/projects/10-cloud-security.png' },
+]
+
+const microProjects = [
+  { number: '01', name: 'PersistHawk', image: '/projects/micro-01-persisthawk.png', category: 'PERSISTENCE / LINUX', description: 'Linux Persistence & LOLBin Hunter', status: 'COMPLETED', github: 'https://github.com/anshnpy/PersistHawk', detail: 'Detects persistence mechanisms and abnormal LOLBin usage on Linux.', accent: 'lime' },
+  { number: '02', name: 'ProcTrace', image: '/projects/micro-02-proctrace.png', category: 'PROCESS / LINUX', description: 'Linux Process Behavior Analyzer / Mini-EDR', status: 'BUILDING', detail: 'Monitors process behavior and highlights suspicious activity.', accent: 'blue' },
+  { number: '03', name: 'ForenSight', image: '/projects/micro-03-forensight.png', category: 'DFIR / FORENSICS', description: 'Linux DFIR Evidence & Timeline Engine', status: 'BUILDING', detail: 'Collects evidence, builds timelines and supports forensic investigation.', accent: 'purple' },
+  { number: '04', name: 'WebCorrelix', image: '/projects/micro-04-webcorrelix.png', category: 'WEB / DETECTION', description: 'Web Attack Detection & Correlation Engine', status: 'BUILDING', detail: 'Analyzes web activity and correlates attack patterns for faster triage.', accent: 'orange' },
+  { number: '05', name: 'DNSpectra', image: '/projects/micro-05-dnspectra.png', category: 'DNS / THREAT HUNTING', description: 'Linux DNS Threat Hunting Engine', status: 'BUILDING', detail: 'Analyzes DNS traffic and logs to identify suspicious domains and anomalies.', accent: 'cyan' },
+]
+function SystemVisual({ type = 'hero' }: { type?: string }) {
+  if (type === 'network' || type === 'network-ids') return <div className="project-visual network-visual"><div className="network-head"><span>NETWORK / IDS</span><b>LIVE</b></div><div className="network-path"><span className="net-node n-internet">INTERNET</span><i className="net-link" /><span className="net-node n-firewall">FIREWALL</span><i className="net-link" /><span className="net-node n-ids">IDS</span><i className="net-link" /><span className="net-node n-network">NETWORK</span></div><div className="network-alert"><small>THREAT DETECTION</small><strong>24</strong><b>ALERTS</b></div><div className="network-packets"><i /><i /><i /><i /><i /></div><div className="network-footer"><span>PACKETS <b>1.2K</b></span><span>STATUS <b>MONITORING</b></span><span>HEALTH <b>86%</b></span></div></div>
+
+  if (type === 'siem') return <div className="project-visual siem-visual"><div className="siem-head"><span>SIEM / CORRELATION</span><b>LIVE</b></div><div className="log-stack"><p><i /> AUTH_FAILURE <small>HIGH</small></p><p><i /> DNS_ANOMALY <small>MED</small></p><p><i /> PROCESS_START <small>LOW</small></p><p><i /> IOC_MATCH <small>HIGH</small></p></div><div className="siem-bars"><i /><i /><i /><i /><i /><i /><i /></div></div>
+
+  if (type === 'incident') return <div className="project-visual incident-visual"><div className="incident-head"><span>INCIDENT / RESPONSE</span><b>ACTIVE</b></div><div className="incident-side"><small>ACTIVE INCIDENTS</small><strong>03</strong><b>PRIORITY / HIGH</b></div><div className="incident-track"><span className="incident-line" /><span className="incident-node is-done"><i /><b>01</b><small>DETECTION</small></span><span className="incident-node is-done"><i /><b>02</b><small>ANALYSIS</small></span><span className="incident-node is-current"><i /><b>03</b><small>CONTAINMENT</small></span><span className="incident-node"><i /><b>04</b><small>ERADICATION</small></span><span className="incident-node"><i /><b>05</b><small>RECOVERY</small></span></div><div className="incident-foot"><span>LAST UPDATE <b>10:36:11</b></span><span>IMPACT <b>CRITICAL SYSTEMS</b></span></div></div>
+
+  if (type === 'malware') return <div className="project-visual malware-visual"><div className="malware-head"><span>MALWARE / SANDBOX</span><b>ISOLATED</b></div><div className="malware-file"><small>SUBMITTED FILE</small><strong>sample.exe</strong><b>PE32</b></div><div className="malware-box"><i className="malware-bio">☣</i><span>SANDBOX</span><b>RUNNING</b></div><div className="malware-process"><span>PROCESS</span><i>sample.exe</i><i>↳ powershell</i><i>↳ network.dll</i></div><div className="malware-signals"><span>PROCESS <b>12</b></span><span>NETWORK <b>07</b></span><span>FILES <b>05</b></span></div><div className="malware-footer"><span>ANALYSIS <b>IN PROGRESS</b></span><span>THREAT <b>HIGH</b></span></div></div>
+
+  if (type === 'mitre') return <div className="project-visual mitre-visual"><div className="mitre-head"><span>MITRE ATT&CK / SIMULATION</span><b>BUILDING</b></div><div className="mitre-chain"><span className="mitre-step"><i>⌘</i><small>INITIAL ACCESS</small><b>T1190</b></span><em>→</em><span className="mitre-step active"><i>⚙</i><small>EXECUTION</small><b>T1059</b></span><em>→</em><span className="mitre-step"><i>↗</i><small>PRIV ESC</small><b>T1068</b></span><em>→</em><span className="mitre-step"><i>→</i><small>LATERAL</small><b>T1021</b></span><em>→</em><span className="mitre-step"><i>◎</i><small>IMPACT</small><b>T1486</b></span></div><div className="mitre-stats"><span><small>TECHNIQUES</small><b>12</b></span><span><small>DETECTIONS</small><b>08</b></span><span><small>COVERAGE</small><b>67%</b></span></div><div className="mitre-detection"><span>ACTIVE STEP</span><b>EXECUTION / T1059</b><i /><i /><i /><i /><i /></div></div>
+
+  if (type === 'ai') return <div className="project-visual ai-visual"><div className="ai-head"><span>AI / SOC COPILOT</span><b>ONLINE</b></div><div className="ai-core-layout"><div className="ai-inputs"><span><i>!</i><b>ALERTS</b><small>1.2K</small></span><span><i>+</i><b>LOGS</b><small>24K</small></span><span><i>□</i><b>ENDPOINTS</b><small>156</small></span><span><i>◎</i><b>THREAT INTEL</b><small>892 IOC</small></span></div><div className="ai-core-orbit"><i className="ai-core-dot d1" /><i className="ai-core-dot d2" /><i className="ai-core-dot d3" /><i className="ai-core-dot d4" /><strong>AI</strong><small>SOC COPILOT</small></div><div className="ai-output"><span><i>~</i><b>THREAT ANALYSIS</b><small>ACTIVE</small></span><span><i>◎</i><b>THREAT SCORE</b><strong>78</strong><small>/100</small></span><span><i>✓</i><b>RECOMMENDATION</b><small>READY</small></span></div></div><div className="ai-insights"><span>POWERSHELL <b>DETECTED</b></span><span>LATERAL MOVEMENT <b>FLAGGED</b></span><span>MALICIOUS IP <b>FOUND</b></span></div><div className="ai-footer"><span>ALERTS <b>1.2K</b></span><span>THREATS <b>156</b></span><span>ACCURACY <b>92%</b></span><span>RESPONSE <b>2.4M</b></span></div></div>
+  if (type === 'dfir') return <div className="project-visual dfir-visual"><div className="dfir-head"><span>DFIR / CASE INVESTIGATION</span><b>BUILDING</b></div><div className="dfir-evidence"><span><i>▣</i><b>DISK IMAGE</b><small>142 GB</small></span><span><i>⌘</i><b>MEMORY DUMP</b><small>8.4 GB</small></span><span><i>□</i><b>EVENT LOGS</b><small>32 FILES</small></span><span><i>◌</i><b>BROWSER DATA</b><small>18 ARTIFACTS</small></span></div><div className="dfir-core"><small>CASE / DFIR-007</small><strong>EVIDENCE</strong><span>CHAIN OF CUSTODY</span></div><div className="dfir-findings"><span><small>FINDINGS</small><b>08</b></span><span><small>SUSPICIOUS</small><b>03</b></span><span><small>CONFIRMED</small><b>02</b></span></div><div className="dfir-events"><span>11:15&nbsp; POWERSHELL EXECUTION</span><span>11:42&nbsp; EXTERNAL CONNECTION</span><span>12:05&nbsp; SENSITIVE FILE ACCESS</span></div></div>
+
+  if (type === 'threat-intel') return <div className="project-visual threatintel-visual"><div className="threatintel-head"><span>THREAT INTEL / IOC GRAPH</span><b>ENRICHED</b></div><div className="ti-network"><i className="ti-link l1" /><i className="ti-link l2" /><i className="ti-link l3" /><i className="ti-link l4" /><i className="ti-link l5" /><span className="ti-node ti-ip"><b>IP</b><small>203.0.113.45</small></span><span className="ti-node ti-domain"><b>DOMAIN</b><small>evil.example</small></span><span className="ti-node ti-hash"><b>HASH</b><small>SHA256</small></span><span className="ti-node ti-actor"><b>ACTOR</b><small>APT-X</small></span><span className="ti-core-new"><strong>IOC</strong><small>ENRICHED</small><i /></span><span className="ti-node ti-malware"><b>MALWARE</b><small>LOADER</small></span></div><div className="ti-risk"><small>RISK SCORE</small><strong>82</strong><b>/100</b></div><div className="ti-enrichment"><span>OSINT <b>READY</b></span><span>RELATIONS <b>14</b></span><span>CONFIDENCE <b>91%</b></span></div></div>
+
+  if (type === 'soar') return <div className="project-visual soar-visual"><div className="soar-head"><span>SOAR / PLAYBOOK AUTOMATION</span><b>AUTOMATED</b></div><div className="soar-trigger"><i>⚡</i><small>TRIGGER</small><b>ALERT RECEIVED</b></div><div className="soar-connector c1" /><div className="soar-step s1"><i>□</i><small>ENRICH</small><b>IOC / URL</b></div><div className="soar-connector c2" /><div className="soar-step s2"><i>◉</i><small>ANALYZE</small><b>THREAT INTEL</b></div><div className="soar-connector c3" /><div className="soar-branches"><span><i>✓</i><small>CONTAIN</small><b>BLOCK IOC</b></span><span><i>↗</i><small>NOTIFY</small><b>ALERT TEAM</b></span><span><i>✕</i><small>ERADICATE</small><b>REMOVE THREAT</b></span></div><div className="soar-footer"><span>RUNS <b>156</b></span><span>SUCCESS <b>92%</b></span><span>AVG TIME <b>1m 42s</b></span></div></div>
+
+  if (type === 'cloud') return <div className="project-visual cloud-visual"><div className="cloud-head"><span>CLOUD / SECURITY MONITORING</span><b>ACTIVE</b></div><div className="cloud-sources"><span><i>☁</i><b>CLOUD</b><small>AWS / AZURE</small></span><span><i>◎</i><b>IAM</b><small>ACCESS</small></span><span><i>⌘</i><b>API</b><small>ACTIVITY</small></span></div><div className="cloud-core"><strong>SEC</strong><small>CLOUD GUARD</small><i className="cloud-ring r1" /><i className="cloud-ring r2" /></div><div className="cloud-findings"><span><small>MISCONFIG</small><b>04</b></span><span><small>ALERTS</small><b>18</b></span><span><small>RISK</small><b>HIGH</b></span></div><div className="cloud-footer"><span>LOGS <b>24K</b></span><span>ASSETS <b>86</b></span><span>HEALTH <b>94%</b></span></div></div>
+
+  if (type === 'soc') return <div className="project-visual soc-visual soc-showcase"><div className="soc-showcase-head"><span>01</span><b>SOC / LIVE MONITOR</b></div><div className="soc-showcase-core"><div className="soc-radar-grid" /><div className="soc-ring ring-a" /><div className="soc-ring ring-b" /><div className="soc-ring ring-c" /><div className="soc-signal-line" /><i className="soc-signal-point p1" /><i className="soc-signal-point p2" /><i className="soc-signal-point p3" /><i className="soc-signal-point p4" /><strong>1,284</strong><small>EVENTS / 24H</small></div><div className="soc-showcase-stats"><span><small>ALERTS</small><b>07</b></span><span><small>HEALTH</small><b>99%</b></span><span><small>STATUS</small><b>LIVE</b></span></div><div className="soc-showcase-footer">DETECTING <b>THREATS</b><i /></div></div>
+
+  if (type === 'windows') return <div className="project-visual windows-visual"><div className="event-top"><span>EVENT VIEWER / SECURITY</span><b>FILTER: AUTH</b></div>{['4624  SUCCESS LOGON', '4625  FAILED LOGON', '4672  ADMIN PRIVILEGE', '4634  LOGOFF'].map((event, index) => <div className="event-row" key={event}><i className={index === 1 ? 'warn' : ''} /><span>{event}</span><small>02:{14 + index}:26</small></div>)}<div className="timeline-line" /></div>
+
+  return <div className="system-visual" aria-label="Abstract active digital network system"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" /><div className="network-globe">{Array.from({ length: 34 }, (_, index) => <i className={`globe-node globe-node-${index + 1}`} key={index} />)}<div className="globe-meridian meridian-one" /><div className="globe-meridian meridian-two" /><div className="globe-latitude latitude-one" /><div className="globe-latitude latitude-two" /><i className="globe-signal signal-one" /><i className="globe-signal signal-two" /><i className="globe-signal signal-three" /></div><div className="globe-hud-ring"><span>NETWORK</span><span>SECURE</span><span>LIVE</span></div><i className="globe-data-packet packet-one" /><i className="globe-data-packet packet-two" /><i className="globe-data-packet packet-three" /><i className="data-point point-one" /><i className="data-point point-two" /><i className="data-point point-three" /><div className="system-grid" /><div className="system-card card-top"><span className="status-dot" /> SYSTEM STATUS <b>ACTIVE</b></div><div className="system-clock"><span>LOCAL TIME</span><strong id="live-clock">00:00:00</strong><small>DELHI / INDIA</small></div><div className="system-card card-bottom">SECURING SYSTEMS<br />BUILDING SOLUTIONS<br />CREATING IMPACT</div><span className="axis axis-x">X / 04</span><span className="axis axis-y">Y /09</span></div>
+}
+
+export default function Page() {
+  const [intro, setIntro] = useState(true)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
+  const [contactSent, setContactSent] = useState(false)
+  const [activeSkill, setActiveSkill] = useState(0)
+  const [activeProject, setActiveProject] = useState<(typeof projects)[number] | null>(null)
+  const [showAllProjects, setShowAllProjects] = useState(false)
+  const [cursor, setCursor] = useState({ x: -100, y: -100, active: false })
+
+  useEffect(() => {
+   const timer = window.setTimeout(() => setIntro(false), 5000)
+    const reveals = document.querySelectorAll('.reveal, .micro-reveal')
+    const observer = new IntersectionObserver((entries) => entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('is-visible')), { threshold: 0.12 })
+    reveals.forEach((element) => observer.observe(element))
+    const moveCursor = (event: MouseEvent) => setCursor((current) => ({ ...current, x: event.clientX, y: event.clientY }))
+    const updateClock = () => { const clock = document.getElementById('live-clock'); if (clock) clock.textContent = new Intl.DateTimeFormat('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true,timeZone:'Asia/Kolkata'}).format(new Date()) }; updateClock(); const clockTimer = window.setInterval(updateClock,1000); const overInteractive = (event: MouseEvent) => setCursor((current) => ({ ...current, active: (event.target as HTMLElement).closest('a, button') !== null }))
+    window.addEventListener('mousemove', moveCursor)
+    window.addEventListener('mouseover', overInteractive)
+    return () => { window.clearTimeout(timer); observer.disconnect(); window.removeEventListener('mousemove', moveCursor); window.removeEventListener('mouseover', overInteractive); window.clearInterval(clockTimer) }
+  }, [showAllProjects])
+
+  return <><div className={`cursor ${cursor.active ? 'cursor-active' : ''}`} style={{ transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)` }} />
+    <header className="site-nav"><a className="brand" href="#top" aria-label="Back to top">AP<span>.</span></a><nav>{navItems.map((item) => <a key={item} href={`#${item.toLowerCase()}`}>{item}</a>)}</nav><a className="talk-link" href="#contact">LET&apos;S TALK <ArrowUpRight size={14} /></a><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-controls="mobile-menu" aria-label="Toggle navigation">{menuOpen ? <X size={20} /> : <Menu size={20} />}</button></header>
+    <div id="mobile-menu" className={`mobile-menu ${menuOpen ? 'mobile-menu-open' : ''}`}>{navItems.map((item) => <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setMenuOpen(false)}>{item}<ArrowUpRight size={16} /></a>)}</div>
+
+    <PortfolioChatbot />
+    <main id="top">
+      <section id="home" className="hero page-pad"><div className="hero-copy reveal"><div className="eyebrow"><span className="lime-dot" /> HELLO, I&apos;M</div><h1>ANSHUMAN<br /><span>PANDEY</span></h1><p className="hero-intro">I build digital experiences, security systems and things that shouldn&apos;t look boring.</p><div className="hero-actions"><a className="lime-button" href="#projects">EXPLORE WORK <ArrowUpRight size={16} /></a><a className="text-button" href="/cv.pdf" target="_blank" rel="noopener noreferrer">DOWNLOAD CV <ArrowDownRight size={16} /></a></div><div className="identity-labels"><span>CYBERSECURITY</span><span>SECURITY OPERATIONS</span><span>CREATIVE TECHNOLOGY</span></div></div><div className="hero-art reveal"><SystemVisual /></div><div className="scroll-cue"><span>SCROLL TO EXPLORE</span><ArrowDownRight size={16} /></div></section>
+      <section className="stats page-pad reveal"><div><strong>10<span>+</span></strong><small>SECURITY PROJECTS</small></div><div><strong>06</strong><small>CORE SKILL AREAS</small></div><div><strong>100<span>%</span></strong><small>HANDS-ON FOCUS</small></div><div><strong>∞</strong><small>ALWAYS LEARNING</small></div><div><strong>24<span>/7</span></strong><small>CURIOSITY MODE</small></div></section>
+      <section id="about" className="about page-pad section-pad"><div className="section-kicker reveal"><span>01</span><span>ABOUT / THE PERSON BEHIND THE SYSTEM</span></div><div className="about-grid"><div className="about-heading reveal">
+  <h2>I LIKE BUILDING<br />THINGS THAT<br />MAKE PEOPLE<br />LOOK <span>TWICE.</span></h2>
+
+  <p className="about-intro">
+    I&apos;m a BCA graduate focused on Cybersecurity and SOC operations.
+    I enjoy analyzing threats, investigating incidents, and building
+    practical security solutions.
+  </p>
+
+  <div className="about-tags">
+    <span>SOC ANALYST</span>
+    <span>THREAT DETECTION</span>
+    <span>INCIDENT RESPONSE</span>
+    <span>ALWAYS LEARNING</span>
+  </div>
+</div><div className="about-side reveal"><div className="profile-portrait"><img src="/anshuman-profile.png" alt="Portrait of Anshuman Pandey" /><div className="portrait-scan" /><span>PROFILE / 2026</span><i /></div><div className="about-description"><span>CYBERSECURITY / SOC</span><p className="profile-intro"><span>01 / SYSTEM STATUS</span><strong>DEFENDING THE<br />DIGITAL LAYER.</strong><em>Monitoring signals. Investigating threats.<br />Learning how attacks move — and how to stop them.</em><small>STATUS: BUILDING&nbsp;&nbsp; // &nbsp;&nbsp;MODE: BLUE TEAM</small></p></div><div className="profile-data"><div><small>BASED IN</small><b>DELHI, INDIA</b></div><div><small>FOCUS</small><b>CYBERSECURITY / SOC</b></div><div><small>CURRENTLY</small><b>BUILDING &amp; LEARNING</b></div><div><small>EDUCATION</small><b>BCA GRADUATE</b></div></div></div></div></section>
+      <section id="skills" className="skills page-pad section-pad"><div className="section-kicker reveal"><span>02</span><span>TOOLS / THE WORKBENCH</span></div><div className="skills-head reveal"><h2>WHAT I<br /><span>WORK WITH</span></h2><p>Curious by default. Practical by design.<br />Always one layer deeper.</p></div><div className="skill-list reveal">{skillGroups.map((skill, index) => <button key={skill.name} className={`skill-row ${activeSkill === index ? 'skill-active' : ''}`} onMouseEnter={() => setActiveSkill(index)} onFocus={() => setActiveSkill(index)} onClick={() => setActiveSkill(index)}><span>{skill.number}</span><strong>{skill.name}</strong><em>{activeSkill === index ? skill.skills : 'EXPLORE'}</em>{activeSkill === index && <small className="skill-focus">FOCUS: {skill.focus}</small>}<ChevronDown size={18} /></button>)}</div></section>
+      <section id="projects" className="projects page-pad section-pad"><div className="section-kicker reveal"><span>03</span><span>SELECTED WORK / RECENT BUILDS</span></div><div className="section-title reveal"><h2>SELECTED <span>WORK.</span></h2></div><div className="project-grid">{projects.slice(0, showAllProjects ? projects.length : 6).map((project) => <a className="project-card reveal" href="#projects" onClick={(event) => { event.preventDefault(); setActiveProject(project) }} key={project.number}><div className="project-art"><img className="project-card-image" src={project.image} alt={project.title} loading="lazy" /></div><div className="project-meta"><span>{project.number}</span><span>{project.tags}</span><span className="project-meta-status">{project.status}</span><MoveUpRight size={18} /></div><h3>{project.title}</h3><p>{project.description}</p><span className="project-explore">EXPLORE PROJECT <MoveUpRight size={14} /></span></a>)}</div><div className="project-view-toggle"><button type="button" onClick={() => setShowAllProjects(!showAllProjects)}>{showAllProjects ? "SHOW LESS" : "VIEW ALL MY WORK"} <ArrowUpRight size={16} /></button></div></section>
+      <section id="micro-builds" className="micro-builds page-pad section-pad">
+        <div className="section-kicker reveal">
+          <span>03A</span>
+          <span>MICRO BUILDS / SECURITY TOOLS</span>
+        </div>
+
+        <div className="micro-head reveal">
+          <div className="micro-title-block">
+            <h2>MICRO <span>PROJECTS.</span></h2>
+          </div>
+
+          
+
+          <div className="micro-index">
+            <span>[ 05 TOOLS ]</span>
+            <small>FOCUSED SECURITY BUILDS</small>
+          </div>
+        </div>
+
+        <div className="micro-card-grid">
+          {microProjects.map((project) => (
+            <a
+              className={`micro-card micro-${project.accent} micro-reveal`}
+              key={project.number}
+              href={project.github || undefined}
+              target={project.github ? "_blank" : undefined}
+              rel={project.github ? "noopener noreferrer" : undefined}
+              aria-disabled={!project.github}
+              onClick={(event) => {
+                if (!project.github) event.preventDefault()
+              }}
+            >
+              <div className="micro-card-top">
+                <span>{project.number}</span>
+                <small>MICRO BUILD</small>
+              </div>
+
+              <div className="micro-card-visual">
+                {project.image ? (
+                  <img className="micro-card-image" src={project.image} alt={project.name} loading="lazy" />
+                ) : (
+                  <div className="micro-placeholder">
+                    <span>{project.name.slice(0, 2).toUpperCase()}</span>
+                    <i />
+                    <b />
+                  </div>
+                )}
+              </div>
+
+              <div className="micro-card-category">{project.category}</div>
+
+              <h3>{project.name}</h3>
+
+              <p className="micro-card-title">{project.description}</p>
+
+              <p className="micro-card-detail">{project.detail}</p>
+
+              <div className="micro-card-footer">
+                <span>VIEW GITHUB</span>
+                {project.github ? (
+                  <span className="micro-card-arrow">↗</span>
+                ) : (
+                  <Lock className="micro-card-lock" size={13} strokeWidth={2} aria-hidden="true" />
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+      <section id="experiments" className="experiments page-pad section-pad"><div className="section-kicker reveal"><span>04</span><span>EXPERIMENTS / VISIBLE LEARNING</span></div><div className="experiment-intro reveal"><h2>BUILD.<br /><span>BREAK.</span><br />LEARN.</h2><p>Small systems, interfaces and security experiments.<br />Because learning should be visible.</p></div><div className="experiment-list reveal">{['SECURITY DASHBOARD', 'NETWORK VISUALIZER', 'THREAT MONITOR', 'TERMINAL INTERFACE'].map((item, index) => <a href="#experiments" onClick={(event) => event.preventDefault()} key={item}><span>0{index + 1}</span><strong>{item}</strong><small className="experiment-status">BUILD QUEUE</small><i><ArrowUpRight size={18} /></i></a>)}</div></section>
+      <section id="journey" className="journey page-pad section-pad"><div className="section-kicker reveal"><span>05</span><span>JOURNEY / THE NEXT LAYER</span></div><div className="journey-grid"><h2 className="reveal">ALWAYS<br /><span>LEARNING.</span></h2><div className="learning-list reveal"><p>CURRENT FOCUS / CYBERSECURITY + SOC</p><div className="journey-status"><span>01</span><strong>BLUE TEAM OPERATIONS</strong><small>CURRENTLY LEARNING</small></div><div className="journey-status"><span>02</span><strong>LOG ANALYSIS</strong><small>CURRENTLY LEARNING</small></div><div className="journey-status"><span>03</span><strong>SECURITY FUNDAMENTALS</strong><small>CURRENTLY LEARNING</small></div><p className="journey-next">EXPLORING NEXT</p>{['THREAT HUNTING', 'MALWARE ANALYSIS', 'CLOUD SECURITY'].map((item, index) => <div key={item}><span>0{index + 1}</span><strong>{item}</strong><ArrowUpRight size={16} /></div>)}</div></div></section>
+      <section id="contact" className="contact page-pad section-pad"><div className="contact-content reveal"><div className="section-kicker"><span>06</span><span>CONTACT / START A CONVERSATION</span></div><h2>LET&apos;S MAKE<br />SOMETHING <span>INTERESTING.</span></h2><button className="lime-button contact-button" type="button" onClick={() => setContactOpen(true)}>LET&apos;S CONNECT <ArrowUpRight size={18} /></button></div><div className="contact-links reveal"><a href="mailto:anshn.py@gmail.com"><Mail size={18} /><span>EMAIL</span><b>anshn.py@gmail.com</b><ArrowUpRight size={18} /></a><a href="/cv.pdf" target="_blank" rel="noopener noreferrer"><ArrowDownRight size={18} /><span>RESUME</span><b>VIEW / DOWNLOAD CV</b><ArrowUpRight size={18} /></a><a href="https://www.linkedin.com/in/anshuman-pandey-b847b5287" target="_blank" rel="noreferrer"><Users size={18} /><span>LINKEDIN</span><b>CONNECT WITH ME</b><ArrowUpRight size={18} /></a><a href="https://github.com/anshnpy" target="_blank" rel="noreferrer"><GitBranch size={18} /><span>GITHUB</span><b>SEE THE BUILDS</b><ArrowUpRight size={18} /></a><div className="contact-location"><span>LOCATION</span><b>DELHI, INDIA</b></div></div></section>      {activeProject && (
+        <div className="project-modal" role="dialog" aria-modal="true" aria-label="Project details" onClick={() => setActiveProject(null)}>
+          <div className="project-modal-window" onClick={(event) => event.stopPropagation()}>
+            <div className="project-modal-head">
+              <span>PROJECT / {activeProject.number}</span>
+              <button type="button" onClick={() => setActiveProject(null)}>CLOSE ×</button>
+            </div>
+
+            <div className="project-modal-grid">
+              <div className="project-modal-art">
+                {activeProject.image ? (
+                  <img className="project-modal-image" src={activeProject.image} alt={activeProject.title} />
+                ) : (
+                  <div className="project-modal-micro-placeholder">
+                    <span>MICRO PROJECT</span>
+                    <strong>{activeProject.title}</strong>
+                  </div>
+                )}
+              </div>
+
+              <div className="project-modal-info">
+                <h2>{activeProject.title}</h2>
+                <p>{activeProject.description}</p>
+
+                <div className="project-modal-tags">
+                  {activeProject.tags.split(' / ').map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+
+                <div className="project-modal-note">
+                  <span>STATUS</span>
+                  <strong>{activeProject.status}</strong>
+                  <p>{activeProject.description}</p>
+
+                  {activeProject.github && (
+                    <a
+                      className="project-github-button"
+                      href={activeProject.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      VIEW GITHUB <ArrowUpRight size={15} />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {contactOpen && (
+        <div className="contact-modal" role="dialog" aria-modal="true" aria-label="Quick contact">
+          <button className="contact-modal-backdrop" type="button" aria-label="Close contact" onClick={() => setContactOpen(false)} />
+          <div className="contact-modal-window">
+            <div className="contact-modal-head">
+              <span>QUICK CONTACT</span>
+              <button type="button" onClick={() => setContactOpen(false)}>CLOSE ×</button>
+            </div>
+            <p>OPEN CHANNEL / SEND A MESSAGE DIRECTLY.</p>
+            <form className="contact-modal-form" onSubmit={async (e) => { e.preventDefault(); const form = e.currentTarget; const response = await fetch("https://formspree.io/f/mvkpbayg", { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } }); if (response.ok) { form.reset(); setContactSent(true); const audioContext = new AudioContext(); const oscillator = audioContext.createOscillator(); const gain = audioContext.createGain(); oscillator.type = "triangle"; oscillator.frequency.setValueAtTime(520, audioContext.currentTime); oscillator.frequency.setValueAtTime(780, audioContext.currentTime + 0.09); gain.gain.setValueAtTime(0.0001, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.055, audioContext.currentTime + 0.015); gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.09); gain.gain.setValueAtTime(0.0001, audioContext.currentTime + 0.09); gain.gain.exponentialRampToValueAtTime(0.065, audioContext.currentTime + 0.105); gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.22); oscillator.connect(gain); gain.connect(audioContext.destination); oscillator.start(); oscillator.stop(audioContext.currentTime + 0.22); setTimeout(() => { setContactSent(false); audioContext.close(); }, 3500); } }}>
+              <input name="name" type="text" placeholder="YOUR NAME" required />
+              <input name="email" type="email" placeholder="YOUR EMAIL" required />
+              <textarea name="message" placeholder="YOUR MESSAGE" required />
+              <input type="hidden" name="_subject" value="New Portfolio Message — Anshuman Pandey" />
+              <button type="submit">SEND MESSAGE ↗</button>{contactSent && <div className="contact-success">✓ MESSAGE SENT SUCCESSFULLY</div>}
+            </form>
+          </div>
+        </div>
+      )}</main>
+    <footer className="footer page-pad"><a className="brand" href="#top">AP<span>.</span></a><span>BUILT WITH CURIOSITY. SECURED WITH INTENT.</span><span>© 2026 ANSHUMAN PANDEY</span></footer>
+  </>
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\components\ui\button.tsx ====================
+
+import { Button as ButtonPrimitive } from '@base-ui/react/button'
+import { cva, type VariantProps } from 'class-variance-authority'
+
+import { cn } from '@/lib/utils'
+
+const buttonVariants = cva(
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
+        outline:
+          'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
+        secondary:
+          'bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
+        ghost:
+          'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50',
+        destructive:
+          'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40',
+        link: 'text-primary underline-offset-4 hover:underline',
+      },
+      size: {
+        default:
+          'h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: 'h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+        icon: 'size-8',
+        'icon-xs':
+          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        'icon-sm':
+          'size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg',
+        'icon-lg': 'size-9',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
+  },
+)
+
+function Button({
+  className,
+  variant = 'default',
+  size = 'default',
+  ...props
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  return (
+    <ButtonPrimitive
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  )
+}
+
+export { Button, buttonVariants }
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\components\AIChat.tsx ====================
+
+"use client"
+
+import { useEffect, useRef, useState } from "react"
+
+type Message = {
+  role: "user" | "assistant"
+  content: string
+}
+
+export default function AIChat() {
+  const [open, setOpen] = useState(false)
+  const [input, setInput] = useState("")
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        "Hey! I'm Anshuman's AI assistant. Ask me about his cybersecurity skills, projects, CV, or SOC career.",
+    },
+  ])
+  const [loading, setLoading] = useState(false)
+  const [listening, setListening] = useState(false)
+  const [speaking, setSpeaking] = useState(false)
+
+  const recognitionRef = useRef<any>(null)
+
+  const speak = (text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return
+
+    const synth = window.speechSynthesis
+    synth.cancel()
+
+    const speakNow = () => {
+      const utterance = new SpeechSynthesisUtterance(text)
+      const voices = synth.getVoices()
+
+      const voice =
+        voices.find(v => /Microsoft (Aria|Jenny|Zira)|Google US English/i.test(v.name)) ??
+        voices.find(v => v.lang.toLowerCase().startsWith("en-us")) ??
+        voices.find(v => v.lang.toLowerCase().startsWith("en"))
+
+      if (voice) {
+        utterance.voice = voice
+        utterance.lang = voice.lang
+      } else {
+        utterance.lang = "en-US"
+      }
+
+      utterance.rate = 0.9
+      utterance.pitch = 0.95
+      utterance.volume = 1
+
+      utterance.onstart = () => setSpeaking(true)
+      utterance.onend = () => setSpeaking(false)
+      utterance.onerror = () => setSpeaking(false)
+
+      synth.speak(utterance)
+    }
+
+    if (synth.getVoices().length) {
+      speakNow()
+    } else {
+      window.setTimeout(speakNow, 500)
+    }
+  }
+  const sendMessage = async (text?: string) => {
+    const message = (text ?? input).trim()
+
+    if (!message || loading) return
+
+    setInput("")
+
+    const newMessages: Message[] = [
+      ...messages,
+      {
+        role: "user",
+        content: message,
+      },
+    ]
+
+    setMessages(newMessages)
+    setLoading(true)
+
+    try {
+      const response = await fetch(
+        "https://anshuman-ai.anshn-py.workers.dev",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: newMessages,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error("AI request failed")
+      }
+
+      const data = await response.json()
+
+      const answer =
+        data?.response ||
+        data?.result?.response ||
+        data?.answer ||
+        "Sorry, I couldn't generate a response."
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: answer,
+        },
+      ])
+
+      speak(answer)
+    } catch (error) {
+      console.error(error)
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "AI connection is temporarily unavailable. Please try again.",
+        },
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const startListening = () => {
+    if (typeof window === "undefined") return
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition
+
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser.")
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+
+    recognition.lang = "en-IN"
+    recognition.interimResults = false
+    recognition.continuous = false
+
+    recognition.onstart = () => {
+      setListening(true)
+    }
+
+    recognition.onresult = (event: any) => {
+      const spokenText = event.results[0][0].transcript
+      setInput(spokenText)
+      sendMessage(spokenText)
+    }
+
+    recognition.onerror = () => {
+      setListening(false)
+    }
+
+    recognition.onend = () => {
+      setListening(false)
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
+  }
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined") {
+        window.speechSynthesis?.cancel()
+      }
+
+      recognitionRef.current?.stop()
+    }
+  }, [])
+
+  return (
+    <>
+      {!open && (
+        <button
+          className="ai-chat-launcher"
+          onClick={() => setOpen(true)}
+          aria-label="Open AI assistant"
+        >
+          <span className="ai-chat-dot" />
+          AI
+        </button>
+      )}
+
+      {open && (
+        <div className="ai-chat-panel">
+          <div className="ai-chat-header">
+            <div>
+              <span className="ai-chat-label">AP // AI ASSISTANT</span>
+              <span className="ai-chat-status">
+                <i /> ONLINE
+              </span>
+            </div>
+
+            <button
+              className="ai-chat-close"
+              onClick={() => setOpen(false)}
+              aria-label="Close AI assistant"
+            >
+              Ãƒâ€”
+            </button>
+          </div>
+
+          <div className="ai-chat-messages">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`ai-chat-message ${
+                  message.role === "user"
+                    ? "ai-chat-user"
+                    : "ai-chat-assistant"
+                }`}
+              >
+                <span className="ai-chat-role">
+                  {message.role === "user" ? "YOU" : "AP_AI"}
+                </span>
+
+                <p>{message.content}</p>
+
+                {message.role === "assistant" && index > 0 && (
+                  <button
+                    className="ai-speak-button"
+                    onClick={() => speak(message.content)}
+                    title="Listen to response"
+                  >
+                    Ã°Å¸â€Å 
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {loading && (
+              <div className="ai-chat-message ai-chat-assistant">
+                <span className="ai-chat-role">AP_AI</span>
+                <p className="ai-thinking">
+                  THINKING<span>.</span><span>.</span><span>.</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="ai-chat-input-area">
+            <button
+              className={`ai-mic-button ${listening ? "active" : ""}`}
+              onClick={startListening}
+              title="Speak"
+              type="button"
+            >
+              {listening ? "Ã¢â€”Â" : "Ã°Å¸Å½â„¢"}
+            </button>
+
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  sendMessage()
+                }
+              }}
+              placeholder={
+                listening ? "LISTENING..." : "ASK SOMETHING..."
+              }
+              disabled={loading}
+            />
+
+            <button
+              className="ai-send-button"
+              onClick={() => sendMessage()}
+              disabled={loading || !input.trim()}
+              type="button"
+            >
+              Ã¢â€ â€”
+            </button>
+          </div>
+
+          {speaking && (
+            <div className="ai-speaking">
+              Ã°Å¸â€Å  AI SPEAKING...
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\components\PortfolioChatbot.BROWSER-VOICE-STABLE.tsx ====================
+
+import { useEffect, useRef, useState } from "react";
+import {
+  UserRound,
+  Code2,
+  FolderOpen,
+  FileText,
+  Mail,
+  AudioLines, Send,
+  X,
+  ExternalLink, Globe2,
+} from "lucide-react";
+
+const profile = {
+  name: "Anshuman Pandey",
+
+  about:
+    "Anshuman Pandey is a BCA graduate focused on Cybersecurity and Security Operations. He is building practical security knowledge around defensive security, SOC workflows and security-focused projects.",
+
+  education: "BCA graduate.",
+
+  focus:
+    "Cybersecurity, Security Operations, SOC and Blue Team security.",
+
+  location: "Delhi, India",
+
+  skills: [
+    "Networking",
+    "Linux",
+    "Python",
+    "Cybersecurity",
+    "SIEM",
+    "Windows Event Logs",
+    "Threat Detection",
+    "Incident Response",
+    "Web Security",
+    "Wireshark",
+  ],
+
+  projects: [
+    "SOC Home Lab",
+    "Windows Event Log Analysis",
+    "Network Traffic Analysis",
+    "Phishing Email Analysis",
+    "SIEM Log Analysis",
+    "Linux Security Practice",
+  ],
+
+  learning: [
+    "Blue Team Operations",
+    "Log Analysis",
+    "Security Fundamentals",
+    "Threat Hunting",
+    "Malware Analysis",
+    "Cloud Security",
+  ],
+
+  career:
+    "Anshuman is building a career in Cybersecurity and Security Operations, with a long-term goal of growing toward Security Engineering.",
+
+  cv: "/resume.pdf",
+
+  email: "anshn.py@gmail.com",
+
+  linkedin:
+    "https://www.linkedin.com/in/anshuman-pandey-b847b5287",
+
+  github: "https://github.com/anshnpy",
+};
+
+const hinglishWords = [
+  "kya",
+  "kaise",
+  "kon",
+  "kaun",
+  "kaha",
+  "kahan",
+  "bta",
+  "bata",
+  "batao",
+  "mere",
+  "mera",
+  "meri",
+  "mujhe",
+  "kr",
+  "kar",
+  "hai",
+  "hain",
+  "chahiye",
+  "wala",
+  "wali",
+  "kyu",
+  "kyon",
+  "achha",
+  "accha",
+  "apne",
+  "iske",
+  "uske",
+  "bhi",
+  "kitna",
+  "kitne",
+  "karta",
+  "karte",
+  "kiya",
+  "btao",
+];
+
+function isHinglish(text: string) {
+  const words = text
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9\s]/g, "")
+    .split(/\s+/);
+
+  return hinglishWords.some((word) => words.includes(word));
+}
+
+type Action = {
+  label: string;
+  href: string;
+  external?: boolean;
+};
+
+type CyberItem = {
+  id: string;
+  description: string;
+  url: string;
+  published?: string | null;
+  lastModified?: string | null;
+  vendor?: string;
+  product?: string;
+  vulnerabilityName?: string;
+  dateAdded?: string;
+  requiredAction?: string;
+  dueDate?: string;
+};
+
+type CyberData = {
+  updated: string;
+  sources: {
+    nvd: string;
+    cisaKev: string;
+  };
+  vulnerabilities: CyberItem[];
+  exploited: CyberItem[];
+};
+type Reply = {
+  text: string;
+  actions?: Action[];
+};
+
+async function getCyberIntelligence(): Promise<CyberData> {
+  const isLocal =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
+  const apiUrl = isLocal
+    ? "http://127.0.0.1:8788/api/cyber"
+    : "/api/cyber";
+
+  const response = await fetch(apiUrl, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Cyber intelligence request failed");
+  }
+
+  return response.json();
+}
+const knowledgeAliases: Record<string, string> = {
+  "soc home lab": "/data/projects/soc-home-lab.md",
+  "soc lab": "/data/projects/soc-home-lab.md",
+  "soc project": "/data/projects/soc-home-lab.md",
+
+  "windows event": "/data/projects/windows-event-log-analysis.md",
+  "windows logs": "/data/projects/windows-event-log-analysis.md",
+  "event logs": "/data/projects/windows-event-log-analysis.md",
+
+  "wireshark": "/data/projects/network-traffic-analysis.md",
+  "packet analysis": "/data/projects/network-traffic-analysis.md",
+  "network traffic": "/data/projects/network-traffic-analysis.md",
+  "network analysis": "/data/projects/network-traffic-analysis.md",
+
+  "phishing": "/data/projects/phishing-email-analysis.md",
+  "phishing email": "/data/projects/phishing-email-analysis.md",
+  "email security": "/data/projects/phishing-email-analysis.md",
+
+  "siem": "/data/projects/siem-log-analysis.md",
+  "siem logs": "/data/projects/siem-log-analysis.md",
+  "log analysis": "/data/projects/siem-log-analysis.md",
+
+  "linux security": "/data/projects/linux-security-practice.md",
+  "linux practice": "/data/projects/linux-security-practice.md",
+
+  "skills": "/data/skills.md",
+  "technologies": "/data/skills.md",
+  "tech stack": "/data/skills.md",
+
+  "learning": "/data/learning.md",
+  "currently learning": "/data/learning.md",
+
+  "career": "/data/career.md",
+  "career goal": "/data/career.md",
+
+  "profile": "/data/profile.md",
+  "about anshuman": "/data/profile.md",
+};
+
+function getKnowledgePath(input: string): string | null {
+  const q = input.toLowerCase().trim();
+
+  const matches = Object.entries(knowledgeAliases)
+    .filter(([alias]) => q.includes(alias))
+    .sort((a, b) => b[0].length - a[0].length);
+
+  return matches[0]?.[1] ?? null;
+}
+
+async function getKnowledgeFile(path: string): Promise<string | null> {
+  try {
+    const response = await fetch(path, {
+      cache: "force-cache",
+    });
+
+    if (!response.ok) return null;
+
+    return await response.text();
+  } catch {
+    return null;
+  }
+}
+
+function extractKnowledgeAnswer(
+  knowledge: string,
+  input: string
+): string | null {
+  const q = input.toLowerCase().trim();
+
+  const sections = knowledge
+    .split(/\n(?=## )/g)
+    .map((section) => section.trim())
+    .filter(Boolean);
+
+  const findSection = (...names: string[]) =>
+    sections.find((section) => {
+      const normalized = section.toLowerCase();
+      return names.some((name) => normalized.includes(`## ${name}`));
+    });
+
+  let preferredSection: string | undefined;
+
+  if (
+    q.includes("interview") ||
+    q.includes("interview answer") ||
+    q.includes("explain for interview")
+  ) {
+    preferredSection = findSection("interview explanation");
+  } else if (
+    q.includes("detail") ||
+    q.includes("detailed") ||
+    q.includes("deep dive") ||
+    q.includes("deep explanation") ||
+    q.includes("explain fully")
+  ) {
+    preferredSection = findSection("detailed answer");
+  } else if (
+    q.includes("how") ||
+    q.includes("workflow") ||
+    q.includes("process") ||
+    q.includes("investigation") ||
+    q.includes("approach")
+  ) {
+    preferredSection = findSection(
+      "investigation workflow",
+      "analysis workflow"
+    );
+  } else if (
+    q.includes("skill") ||
+    q.includes("skills") ||
+    q.includes("what did he learn") ||
+    q.includes("what was learned")
+  ) {
+    preferredSection = findSection("skills demonstrated");
+  } else if (
+    q.includes("objective") ||
+    q.includes("goal") ||
+    q.includes("purpose")
+  ) {
+    preferredSection = findSection("objective");
+  } else if (
+    q.includes("tool") ||
+    q.includes("tools") ||
+    q.includes("technology") ||
+    q.includes("technologies")
+  ) {
+    preferredSection = findSection(
+      "tool",
+      "skills demonstrated",
+      "analysis areas"
+    );
+  }
+
+  if (!preferredSection) {
+    preferredSection = findSection(
+      "short answer",
+      "overview"
+    );
+  }
+
+  if (!preferredSection) {
+    return null;
+  }
+
+  return preferredSection
+    .replace(/^##\s+.*$/m, "")
+    .trim();
+}
+
+async function getKnowledgeReply(
+  input: string
+): Promise<Reply | null> {
+  const path = getKnowledgePath(input);
+
+  if (!path) return null;
+
+  const knowledge = await getKnowledgeFile(path);
+
+  if (!knowledge) return null;
+
+  const answer = extractKnowledgeAnswer(knowledge, input);
+
+  if (!answer) return null;
+
+  return {
+    text: answer,
+  };
+}
+function getReply(input: string): Reply {
+  const q = input.toLowerCase().trim();
+  const hinglish = isHinglish(input);
+
+  const openCv: Action = {
+    label: "OPEN CV",
+    href: profile.cv,
+  };
+
+  const openGithub: Action = {
+    label: "OPEN GITHUB",
+    href: profile.github,
+    external: true,
+  };
+
+  const openLinkedin: Action = {
+    label: "OPEN LINKEDIN",
+    href: profile.linkedin,
+    external: true,
+  };
+
+  const sendEmail: Action = {
+    label: "SEND EMAIL",
+    href: `mailto:${profile.email}`,
+  };
+
+  if (
+    q.includes("who is anshuman") ||
+    q.includes("who is he") ||
+    q.includes("about anshuman") ||
+    q.includes("about him") ||
+    q.includes("profile") ||
+    q.includes("tell me about anshuman")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman Pandey ek BCA graduate hain jo Cybersecurity aur Security Operations par focus kar rahe hain. Unka goal practical defensive security skills build karna aur long term mein Security Engineering ki taraf grow karna hai."
+        : "Anshuman Pandey is a BCA graduate focused on Cybersecurity and Security Operations. He is building practical defensive security skills with a long-term goal of growing toward Security Engineering.",
+      actions: [openCv, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("education") ||
+    q.includes("degree") ||
+    q.includes("qualification") ||
+    q.includes("study") ||
+    q.includes("bca")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ne BCA complete kiya hai. Ab unka primary career focus Cybersecurity aur Security Operations hai."
+        : "Anshuman has completed his BCA. His current career focus is Cybersecurity and Security Operations.",
+      actions: [openCv],
+    };
+  }
+
+  if (
+    q.includes("skill") ||
+    q.includes("skills") ||
+    q.includes("technology") ||
+    q.includes("technologies") ||
+    q.includes("tools") ||
+    q.includes("tech stack")
+  ) {
+    return {
+      text: hinglish
+        ? `Anshuman ki core security skills mein ${profile.skills.join(", ")} shamil hain.`
+        : `Anshuman's core security skills include ${profile.skills.join(", ")}.`,
+    };
+  }
+
+  if (
+    q.includes("learning") ||
+    q.includes("currently learning") ||
+    q.includes("exploring") ||
+    q.includes("learn") ||
+    q.includes("study now")
+  ) {
+    return {
+      text: hinglish
+        ? `Currently Anshuman ${profile.learning.join(", ")} par focus kar rahe hain.`
+        : `Anshuman is currently focusing on ${profile.learning.join(", ")}.`,
+    };
+  }
+
+  if (
+    q.includes("career") ||
+    q.includes("goal") ||
+    q.includes("future") ||
+    q.includes("become") ||
+    q.includes("career goal")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka current goal Cybersecurity aur SOC/Blue Team roles mein grow karna hai. Long term mein woh Security Engineering ki taraf jaana chahte hain."
+        : "Anshuman's current goal is to grow in Cybersecurity and SOC/Blue Team roles, with a long-term direction toward Security Engineering.",
+      actions: [openCv, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("role") ||
+    q.includes("job") ||
+    q.includes("looking for") ||
+    q.includes("position") ||
+    q.includes("hire") ||
+    q.includes("hiring")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman primarily entry-level SOC, Blue Team aur Cybersecurity opportunities ke liye focused hain. Long term goal Security Engineering mein grow karna hai."
+        : "Anshuman is primarily focused on entry-level SOC, Blue Team and Cybersecurity opportunities, with a long-term goal of growing toward Security Engineering.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("why should i hire") ||
+    q.includes("why hire") ||
+    q.includes("why him") ||
+    q.includes("why anshuman")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ke paas BCA background hai aur unka focus practical Cybersecurity, SOC workflows, networking, Linux, SIEM aur defensive security par hai. Woh hands-on learning aur continuous improvement par focused hain."
+        : "Anshuman combines a BCA background with a focused direction toward Cybersecurity and SOC operations. His portfolio emphasizes networking, Linux, SIEM, security monitoring and continuous hands-on learning.",
+      actions: [openCv, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("available") ||
+    q.includes("availability") ||
+    q.includes("join")
+  ) {
+    return {
+      text: hinglish
+        ? "For current availability, role requirements ya joining details, Anshuman se directly contact karna best rahega."
+        : "For current availability, role requirements or joining details, the best option is to contact Anshuman directly.",
+      actions: [sendEmail, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("cv") ||
+    q.includes("resume") ||
+    q.includes("curriculum vitae")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka latest CV yahan available hai."
+        : "Anshuman's CV is available here.",
+      actions: [openCv],
+    };
+  }
+
+  if (
+    q.includes("github") ||
+    q.includes("code") ||
+    q.includes("repository") ||
+    q.includes("repo")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka GitHub profile yahan hai."
+        : "Anshuman's GitHub profile is available here.",
+      actions: [openGithub],
+    };
+  }
+
+  if (
+    q.includes("linkedin") ||
+    q.includes("linked in")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka LinkedIn profile yahan hai."
+        : "Anshuman's LinkedIn profile yahan available hai."
+        ,
+      actions: [openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("contact") ||
+    q.includes("email") ||
+    q.includes("reach") ||
+    q.includes("mail")
+  ) {
+    return {
+      text: hinglish
+        ? `Anshuman ko ${profile.email} par contact kar sakte ho. LinkedIn aur GitHub bhi available hain.`
+        : `You can contact Anshuman at ${profile.email}. His LinkedIn and GitHub profiles are also available.`,
+      actions: [sendEmail, openLinkedin, openGithub],
+    };
+  }
+
+  if (
+    q.includes("location") ||
+    q.includes("where is he") ||
+    q.includes("where does he live") ||
+    q.includes("based")
+  ) {
+    return {
+      text: hinglish
+        ? `Anshuman ${profile.location} mein based hain.`
+        : `Anshuman is based in ${profile.location}.`,
+    };
+  }
+
+  if (
+    q.includes("soc") ||
+    q.includes("security operations") ||
+    q.includes("blue team")
+  ) {
+    return {
+      text: hinglish
+        ? "SOC aur Blue Team Anshuman ke primary career focus areas hain. Woh monitoring, log analysis, threat detection aur incident-response fundamentals build kar rahe hain."
+        : "SOC and Blue Team security are key areas of Anshuman's career focus. He is building skills around monitoring, log analysis, threat detection and incident-response fundamentals.",
+    };
+  }
+  if (
+
+    q.includes("experience") ||
+    q.includes("cybersecurity experience") ||
+    q.includes("security experience") ||
+    q.includes("work experience")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka current portfolio practical cybersecurity learning, hands-on security builds aur SOC-focused skill development ko highlight karta hai. In builds ko professional work experience ke roop mein present nahi kiya gaya hai."
+        : "Anshuman's current portfolio highlights practical cybersecurity learning, hands-on security builds and SOC-focused skill development. These builds are not presented as professional work experience.",
+      actions: [openCv, openGithub],
+    };
+  }
+
+  if (
+    q.includes("soc l1") ||
+    q.includes("soc level 1") ||
+    q.includes("soc analyst") ||
+    q.includes("soc role")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman entry-level SOC / SOC L1 aur Blue Team opportunities ko target kar rahe hain. Unka focus security monitoring, log analysis, threat detection aur incident-response fundamentals par hai."
+        : "Anshuman is targeting entry-level SOC / SOC L1 and Blue Team opportunities. His focus includes security monitoring, log analysis, threat detection and incident-response fundamentals.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("internship") ||
+    q.includes("intern") ||
+    q.includes("entry level") ||
+    q.includes("entry-level")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman entry-level Cybersecurity, SOC aur Blue Team opportunities ke liye open hain. Portfolio practical learning aur hands-on security builds ko showcase karta hai."
+        : "Anshuman is open to entry-level Cybersecurity, SOC and Blue Team opportunities. His portfolio showcases practical learning and hands-on security builds.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("currently building") ||
+    q.includes("current build") ||
+    q.includes("what is he building") ||
+    q.includes("building now")
+  ) {
+    return {
+      text: hinglish
+        ? `Abhi portfolio mein ${profile.projects.join(", ")} jaise security builds aur visible learning experiments showcase kiye ja rahe hain.`
+        : `The portfolio currently showcases security builds such as ${profile.projects.join(", ")} along with visible learning experiments.`,
+      actions: [openGithub],
+    };
+  }
+  if (
+    q.includes("cybersecurity") ||
+    q.includes("cyber security") ||
+    q.includes("security")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka main focus Cybersecurity hai, especially SOC, Blue Team, defensive security, monitoring aur investigation."
+        : "Anshuman's main focus is Cybersecurity, particularly SOC, Blue Team, defensive security, monitoring and investigation.",
+    };
+  }
+
+  return {
+    text: hinglish
+      ? "Main Anshuman ke profile, education, skills, portfolio builds, learning areas, SOC career focus, CV, GitHub, LinkedIn aur contact information ke baare mein bata sakta hoon. Kuch specific poochho."
+      : "I can tell you about Anshuman's profile, education, skills, portfolio builds, learning areas, SOC career focus, CV, GitHub, LinkedIn and contact information. Ask me something specific.",
+  };
+}
+
+export default function PortfolioChatbot() {
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
+  const [thinking, setThinking] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const voiceModeRef = useRef(false);
+
+  const setVoiceModeSafe = (value: boolean) => {
+    voiceModeRef.current = value;
+    setVoiceMode(value);
+  };
+  const [speaking, setSpeaking] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voiceRequestRef = useRef(false);
+  const voiceGenerationRef = useRef(0);
+  const speakingRef = useRef(false);
+
+  // Text currently being spoken by the browser.
+  // Used to prevent the microphone from hearing the bot's own voice.
+  const spokenTextRef = useRef("");
+
+  const normalizeVoiceText = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const looksLikeBotEcho = (heard: string) => {
+    const spoken = normalizeVoiceText(spokenTextRef.current);
+    const current = normalizeVoiceText(heard);
+
+    if (!spoken || !current) return false;
+    if (current.length < 2) return true;
+
+    if (spoken.startsWith(current)) return true;
+
+    const words = current.split(" ");
+    if (words.length >= 2) {
+      const spokenWords = spoken.split(" ");
+
+      for (let i = 0; i <= spokenWords.length - words.length; i++) {
+        const chunk = spokenWords
+          .slice(i, i + words.length)
+          .join(" ");
+
+        if (chunk === current) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const clearSilenceTimer = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  };
+
+  const startSilenceTimer = () => {
+    clearSilenceTimer();
+
+    silenceTimerRef.current = setTimeout(() => {
+      if (voiceModeRef.current && !speakingRef.current) {
+        stopVoiceRecognition();
+        setListening(false);
+      }
+    }, 10000);
+  };
+
+  const stopVoiceRecognition = () => {
+    clearSilenceTimer();
+    const recognition = recognitionRef.current;
+
+    if (!recognition) return;
+
+    recognitionRef.current = null;
+
+    try {
+      recognition.onend = null;
+      recognition.onerror = null;
+      recognition.onresult = null;
+      recognition.stop();
+    } catch {}
+
+    setListening(false);
+  };
+
+  const closeVoiceMode = () => {
+    stopVoiceRecognition();
+
+    if (
+      typeof window !== "undefined" &&
+      "speechSynthesis" in window
+    ) {
+      window.speechSynthesis.cancel();
+    }
+
+    voiceGenerationRef.current += 1;
+    voiceRequestRef.current = false;
+    speakingRef.current = false;
+    spokenTextRef.current = "";
+
+
+    setSpeaking(false);
+    setListening(false);
+    setVoiceModeSafe(false);
+  };
+  const speakReply = (text: string) => {
+    if (
+      typeof window === "undefined" ||
+      !("speechSynthesis" in window)
+    ) {
+      return;
+    }
+
+    const generation = voiceGenerationRef.current;
+
+    // NEVER keep microphone active while TTS is speaking.
+    stopVoiceRecognition();
+
+    window.speechSynthesis.cancel();
+
+    spokenTextRef.current = text;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    const voices = window.speechSynthesis.getVoices();
+
+    const preferredVoice =
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase() === "en-in"
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase().startsWith("en-in")
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase().startsWith("en-us")
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase().startsWith("en-gb")
+      );
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.lang = "en-IN";
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+
+    utterance.onstart = () => {
+      if (
+        voiceGenerationRef.current !== generation ||
+        !voiceModeRef.current
+      ) {
+        window.speechSynthesis.cancel();
+        return;
+      }
+
+      speakingRef.current = true;
+      setSpeaking(true);
+
+      // IMPORTANT:
+      // Recognition stays OFF while the bot is speaking.
+      stopVoiceRecognition();
+    };
+
+    utterance.onend = () => {
+      if (
+        voiceGenerationRef.current !== generation
+      ) {
+        return;
+      }
+
+      speakingRef.current = false;
+      setSpeaking(false);
+      spokenTextRef.current = "";
+
+      if (voiceModeRef.current) {
+        setTimeout(() => {
+          if (
+            voiceModeRef.current &&
+            voiceGenerationRef.current === generation &&
+            !speakingRef.current &&
+            !window.speechSynthesis.speaking &&
+            !recognitionRef.current
+          ) {
+            startVoiceInput();
+          }
+        }, 150);
+      }
+    };
+
+    utterance.onerror = () => {
+      if (
+        voiceGenerationRef.current !== generation
+      ) {
+        return;
+      }
+
+      speakingRef.current = false;
+      setSpeaking(false);
+      spokenTextRef.current = "";
+
+      if (voiceModeRef.current) {
+        setTimeout(() => {
+          if (
+            voiceModeRef.current &&
+            !speakingRef.current &&
+            !window.speechSynthesis.speaking &&
+            !recognitionRef.current
+          ) {
+            startVoiceInput();
+          }
+        }, 150);
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const startVoiceInput = () => {
+  if (
+    typeof window === "undefined" ||
+    !voiceModeRef.current ||
+    speakingRef.current ||
+    window.speechSynthesis?.speaking
+  ) {
+    return;
+  }
+
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    console.log("SpeechRecognition is not supported by this browser.");
+    return;
+  }
+
+  if (recognitionRef.current) return;
+
+  const recognition = new SpeechRecognition();
+
+  recognition.lang = "en-IN";
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    if (recognitionRef.current === recognition) {
+      setListening(true);
+    }
+  };
+
+  recognition.onresult = (event: any) => {
+    if (recognitionRef.current !== recognition) return;
+
+    const result = event.results?.[event.resultIndex];
+    if (!result) return;
+
+    const transcript =
+      result?.[0]?.transcript?.trim() || "";
+
+    if (!transcript) return;
+
+    console.log(
+      "VOICE RESULT:",
+      transcript,
+      "FINAL:",
+      result.isFinal
+    );
+
+    if (
+      speakingRef.current ||
+      window.speechSynthesis?.speaking
+    ) {
+      return;
+    }
+
+    if (!result.isFinal) return;
+
+    const voiceCommand = transcript
+      .toLowerCase()
+      .replace(/[.,!?]/g, "")
+      .trim();
+
+    const closeVoicePhrases = [
+      "stop",
+      "bye",
+      "goodbye",
+      "close",
+      "exit",
+      "done",
+      "im done",
+      "i am done",
+      "thats all",
+      "that is all",
+      "stop listening",
+      "close voice",
+      "close the voice",
+      "close voice mode",
+      "stop voice",
+      "stop the voice",
+      "end conversation",
+      "end the conversation",
+      "you can stop"
+    ];
+
+    const shouldCloseVoice =
+      closeVoicePhrases.includes(voiceCommand);
+
+    if (shouldCloseVoice) {
+      console.log("VOICE COMMAND: Closing voice mode");
+
+      closeVoiceMode();
+      return;
+    }
+
+    try {
+      recognition.stop();
+    } catch {}
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+
+    voiceGenerationRef.current += 1;
+    voiceRequestRef.current = true;
+
+    sendMessage(transcript);
+  };
+
+  recognition.onend = () => {
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+      setListening(false);
+    }
+
+    /*
+     * Silence / timeout recovery.
+     *
+     * If the user simply stops talking and no request was sent,
+     * give the microphone another listening session.
+     *
+     * Do NOT restart while the bot is speaking.
+     */
+    if (
+      voiceModeRef.current &&
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !voiceRequestRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !recognitionRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !voiceRequestRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 700);
+    }
+  };
+
+  recognition.onerror = (event: any) => {
+    console.log("VOICE ERROR:", event?.error);
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+
+    /*
+     * Permission errors should stop the voice system.
+     * Temporary errors such as no-speech/audio-capture can recover.
+     */
+    if (
+      event?.error === "not-allowed" ||
+      event?.error === "service-not-allowed"
+    ) {
+      return;
+    }
+
+    if (
+      voiceModeRef.current &&
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !voiceRequestRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !recognitionRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !voiceRequestRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 700);
+    }
+  };
+
+  recognitionRef.current = recognition;
+
+  try {
+    recognition.start();
+  } catch (error) {
+    console.log("VOICE START ERROR:", error);
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+  }
+};
+
+useEffect(() => {
+  if (voiceMode) {
+    if (
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !recognitionRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !recognitionRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 100);
+    }
+
+    return;
+  }
+
+  voiceGenerationRef.current += 1;
+
+  stopVoiceRecognition();
+
+  if (
+    typeof window !== "undefined" &&
+    "speechSynthesis" in window
+  ) {
+    window.speechSynthesis.cancel();
+  }
+
+  spokenTextRef.current = "";
+  speakingRef.current = false;
+
+  setSpeaking(false);
+  setListening(false);
+}, [voiceMode]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [messages, setMessages] = useState<
+    { from: "bot" | "user"; text: string; actions?: Action[]; cyber?: CyberData }[]
+  >([]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [messages, thinking, open]);
+  const playReplySound = () => {
+    const audio = new Audio("/message-sent.wav");
+    audio.volume = 0.18;
+    audio.play().catch(() => {});
+  };
+
+  const sendMessage = async (text = input) => {
+    const value = text.trim();
+
+    if (!value || (thinking && !voiceRequestRef.current)) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { from: "user", text: value },
+    ]);
+
+    setInput("");
+    setThinking(true);
+    const wasVoiceRequest = voiceRequestRef.current;
+    const requestGeneration = voiceGenerationRef.current;
+    voiceRequestRef.current = false;
+
+    const isCyberNewsRequest =
+      value.toLowerCase().includes("cyber news") ||
+      value.toLowerCase().includes("latest cybersecurity news") ||
+      value.toLowerCase().includes("cybersecurity news");
+
+    if (isCyberNewsRequest) {
+      try {
+        const data = await getCyberIntelligence();
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            text: "LIVE CYBER INTELLIGENCE",
+            cyber: data,
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            text: "I couldn't retrieve the live cybersecurity feed right now. Please try again shortly.",
+          },
+        ]);
+      } finally {
+        setThinking(false);
+        playReplySound();
+      }
+
+      return;
+    }
+
+    setTimeout(async () => {
+      let reply = await getKnowledgeReply(value);
+
+      if (!reply) {
+        reply = getReply(value);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          from: "bot",
+          text: reply.text,
+          actions: reply.actions,
+        },
+      ]);
+
+      setThinking(false);
+      playReplySound();
+
+      if (
+        wasVoiceRequest &&
+        voiceGenerationRef.current === requestGeneration
+      ) {
+        speakReply(reply.text);
+      }
+    }, 900);
+  };
+  const backToMenu = () => {
+    setMessages([]);
+    setThinking(false);
+    setInput("");
+  };
+  const quick = (text: string) => {
+    sendMessage(text);
+  };
+
+  const openAction = (action: Action) => {
+    if (action.href.startsWith("mailto:")) {
+      window.location.href = action.href;
+      return;
+    }
+
+    if (action.external) {
+      window.open(action.href, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    window.open(action.href, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <>
+      {!open && (
+        <button
+          type="button"
+          className="orbit-chat-node"
+          onClick={() => setOpen(true)}
+          aria-label="Open portfolio chat"
+        >
+          <span className="orbit-ring orbit-ring-1" />
+          <span className="orbit-ring orbit-ring-2" />
+          <span className="orbit-ring orbit-ring-3" />
+
+          <span className="orbit-particle orbit-particle-1" />
+          <span className="orbit-particle orbit-particle-2" />
+          <span className="orbit-particle orbit-particle-3" />
+
+          <span className="orbit-chat-icon">
+            <span className="orbit-chat-dots">
+              <i />
+              <i />
+              <i />
+            </span>
+          </span>
+
+          <span className="orbit-chat-label">CHAT</span>
+        </button>
+      )}
+
+      {open && (
+        <div className="orbit-chat-overlay">
+          <button
+            className="orbit-chat-backdrop"
+            type="button"
+            aria-label="Close chat"
+            onClick={() => { closeVoiceMode(); setOpen(false); }}
+          />
+
+          <section className="orbit-chat-window">
+
+      {voiceMode && (
+        <div className="orbit-voice-mode">
+          <div className="orbit-voice-panel">
+            <button
+              type="button"
+              className="orbit-voice-close"
+              onClick={() => {
+                closeVoiceMode();
+              }}
+              aria-label="Close voice mode"
+            >
+              <X size={20} />
+            </button>
+
+            <div className={`orbit-voice-orb ${listening ? "is-listening" : ""} ${speaking ? "is-speaking" : ""}`}>
+              <div className="orbit-voice-core">
+                <AudioLines size={42} strokeWidth={1.8} />
+              </div>
+              <span className="orbit-voice-ring ring-one" />
+              <span className="orbit-voice-ring ring-two" />
+              <span className="orbit-voice-ring ring-three" />
+            </div>
+
+            <div className="orbit-voice-status">
+              <span className="orbit-voice-dot" />
+              <strong>{speaking ? "SPEAKING..." : listening ? "LISTENING..." : "READY"}</strong>
+            </div>
+
+            <p className="orbit-voice-caption">
+              {speaking ? "Orbit AI is speaking" : listening ? "I am listening..." : "Tap the voice button and speak"}
+            </p>
+          </div>
+        </div>
+      )}
+
+            <div className="orbit-grid" />
+
+            <header className="orbit-header">
+              <div className="orbit-online">
+                <span />
+                ONLINE
+              </div>
+
+              <button
+                type="button"
+                className="orbit-close"
+                onClick={() => { closeVoiceMode(); setOpen(false); }}
+                aria-label="Close"
+              >
+                <X size={17} />
+              </button>
+            </header>
+
+            {messages.length > 0 && (
+              <div className="orbit-chat-topbar">
+                <button
+                  type="button"
+                  className="orbit-back-button"
+                  onClick={backToMenu}
+                >
+                  <span>LIVE SECURITY FEED</span>
+                </button>
+              </div>
+            )}
+
+            <div className="orbit-chat-content">
+              {messages.length === 0 && !thinking && (
+                <div className="orbit-welcome">
+                  <div className="orbit-mini-radar">
+                    <span />
+                  </div>
+
+                  <div>
+                    <h3>
+                      Hey there <span>👋</span>
+                    </h3>
+
+                    <p>What do you want to know?</p>
+                  </div>
+                </div>
+              )}
+
+              {messages.length === 0 && !thinking && (
+                <div className="orbit-quick-actions">
+                  <button type="button" onClick={() => quick("Tell me about Anshuman")}>
+                    <UserRound size={15} />
+                    ABOUT ME
+                  </button>
+
+                  <button type="button" onClick={() => quick("What are Anshuman's skills?")}>
+                    <Code2 size={15} />
+                    SKILLS
+                  </button>
+
+                  <button type="button" onClick={() => quick("Tell me about the projects")}>
+                    <FolderOpen size={15} />
+                    PROJECTS
+                  </button>
+
+                  <button type="button" onClick={() => quick("Where is the CV?")}>
+                    <FileText size={15} />
+                    CV / RESUME
+                  </button>
+
+                  <button
+                    type="button"
+                    className="orbit-news-button"
+                    onClick={() => quick("Show me the latest cybersecurity news")}
+                  >
+                    <Globe2 size={15} />
+                    CYBER NEWS
+                  </button>
+
+                  <button
+                    type="button"
+                    className="orbit-contact-button"
+                    onClick={() => quick("How can I contact Anshuman?")}
+                  >
+                    <Mail size={15} />
+                    CONTACT
+                  </button>
+                </div>
+              )}
+
+              {messages.length > 0 && (
+                <div className="orbit-messages">
+
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`orbit-message ${
+                        message.from === "user"
+                          ? "orbit-user-message"
+                          : "orbit-bot-message"
+                      }`}
+                    >
+                      <small>
+                        {message.from === "user" ? "YOU" : "SYSTEM"}
+                      </small>
+
+                      <p>{message.text}</p>
+                      {message.cyber && (
+                        <div className="orbit-cyber-feed">
+                          <div className="orbit-cyber-feed-head">
+                  <span>LIVE SECURITY FEED</span>
+                            <small>NVD + CISA KEV</small>
+                          </div>
+
+                          {message.cyber.exploited.length > 0 && (
+                            <div className="orbit-cyber-group">
+                              <div className="orbit-cyber-group-title">
+                                <span>01</span>
+                                <strong>ACTIVELY EXPLOITED</strong>
+                              </div>
+
+                              {message.cyber.exploited.slice(0, 3).map((item) => (
+                                <div className="orbit-cyber-card" key={item.id}>
+                                  <div className="orbit-cyber-card-top">
+                                    <strong>{item.id}</strong>
+                                    <span>KEV</span>
+                                  </div>
+
+                                  <h4>
+                                    {item.vulnerabilityName || item.description}
+                                  </h4>
+
+                                    <p>{item.vendor} · {item.product}</p>
+
+                                  <div className="orbit-cyber-card-meta">
+                                    <span>
+                                    ADDED {item.dateAdded || "UNKNOWN"}
+                                    </span>
+
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      VIEW ADVISORY
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {message.cyber.vulnerabilities.length > 0 && (
+                            <div className="orbit-cyber-group">
+                              <div className="orbit-cyber-group-title">
+                                <span>02</span>
+                                <strong>RECENT CVEs</strong>
+                              </div>
+
+                              {message.cyber.vulnerabilities.slice(0, 3).map((item) => (
+                                <div className="orbit-cyber-card" key={item.id}>
+                                  <div className="orbit-cyber-card-top">
+                                    <strong>{item.id}</strong>
+                                    <span>NVD</span>
+                                  </div>
+
+                                  <p>{item.description}</p>
+
+                                  <div className="orbit-cyber-card-meta">
+                                    <span>
+                                      {item.published
+                                        ? new Date(item.published).toLocaleDateString()
+                                        : "RECENT"}
+                                    </span>
+
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      VIEW CVE
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="orbit-cyber-updated">
+                            UPDATED {new Date(message.cyber.updated).toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+
+                      {message.actions && message.actions.length > 0 && (
+                        <div className="orbit-message-actions">
+                          {message.actions.map((action) => (
+                            <button
+                              type="button"
+                              key={action.label}
+                              onClick={() => openAction(action)}
+                            >
+                              {action.label}
+                              <ExternalLink size={12} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+
+              {thinking && (
+                <div className="orbit-thinking">
+                  <div className="orbit-thinking-radar">
+                    <span />
+                  </div>
+
+                  <strong>ANALYZING YOUR QUERY</strong>
+
+                  <div className="orbit-thinking-dots">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+
+                  <small>Please wait a moment</small>
+                </div>
+              )}
+            </div>
+
+            <div className="orbit-secure-line">
+              <span />
+              SECURE CHANNEL
+              <span />
+            </div>
+
+            <div className="orbit-input-area">
+              <input
+                value={input}
+                disabled={thinking}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") sendMessage();
+                }}
+                placeholder={thinking ? "Please wait..." : "Ask anything..."}
+              />
+
+              <button
+                type="button"
+                disabled={thinking}
+                onClick={() => sendMessage()}
+                aria-label="Send message"
+                title="Send"
+                className="send-btn"
+              >
+                <Send size={19} strokeWidth={2.3} />
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+  if (voiceModeRef.current) {
+    closeVoiceMode();
+    return;
+  }
+
+  setVoiceModeSafe(true);
+
+  setTimeout(() => {
+    startVoiceInput();
+  }, 300);
+}} aria-label="Voice input"
+                title={listening ? "Stop listening" : "Speak"}
+                className={`voice-btn ${listening ? "voice-active" : ""}`}
+              >
+                <AudioLines size={21} strokeWidth={2.4} />
+              </button>
+            </div>
+
+            <footer className="orbit-footer">
+              <span>SECURE & PRIVATE</span>
+              <span>SMART RESPONSES</span>
+              <span>ALWAYS ONLINE</span>
+            </footer>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\components\PortfolioChatbot.old.tsx ====================
+
+"use client";
+
+import { useState } from "react";
+import { MessageCircle, X, Send } from "lucide-react";
+
+const replies: Record<string, string> = {
+  "who is anshuman":
+    "Anshuman Pandey is a cybersecurity-focused BCA graduate building skills in SOC operations, threat detection and defensive security.",
+  "about anshuman":
+    "Anshuman is focused on Cybersecurity / SOC, with hands-on work around networking, Linux, SIEM, security monitoring and blue-team concepts.",
+  "skills":
+    "Core areas include Networking, Linux, Python, Security, SIEM and Web Security. Tools include Wireshark, Splunk and Elastic.",
+  "projects":
+    "Featured projects include Windows Event Log Analysis, Network Traffic Analysis, Security Monitoring Dashboard, SOC Investigation Lab and Web Security Testing.",
+  "contact":
+    "You can contact Anshuman through the Contact section, email or LinkedIn on this website.",
+  "cv":
+    "You can download Anshuman's CV using the DOWNLOAD CV button on the website.",
+  "github":
+    "You can explore Anshuman's code and projects through the GitHub link in the Contact section.",
+};
+
+function getReply(message: string) {
+  const text = message.toLowerCase();
+
+  if (text.includes("who") && text.includes("anshuman")) return replies["who is anshuman"];
+  if (text.includes("about") || text.includes("anshuman")) return replies["about anshuman"];
+  if (text.includes("skill") || text.includes("tool")) return replies["skills"];
+  if (text.includes("project")) return replies["projects"];
+  if (text.includes("contact") || text.includes("email")) return replies["contact"];
+  if (text.includes("cv") || text.includes("resume")) return replies["cv"];
+  if (text.includes("github")) return replies["github"];
+
+  return "I can help you explore Anshuman's profile, skills, projects, CV, GitHub and contact information. Try asking about his skills or projects.";
+}
+
+export default function PortfolioChatbot() {
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      from: "bot",
+      text: "SYSTEM ONLINE. ðŸ‘‹ Ask me about Anshuman, his skills, projects, CV or cybersecurity journey.",
+    },
+  ]);
+
+  const playReplySound = () => {
+    const audio = new Audio("/message-sent.wav");
+    audio.volume = 0.7;
+    audio.play().catch(() => {});
+  };
+  const sendMessage = () => {
+    const value = input.trim();
+    if (!value) return;
+
+    const audio = new AudioContext();
+    audio.resume();
+
+    setMessages((prev) => [
+      ...prev,
+      { from: "user", text: value },
+      { from: "bot", text: "THINKING..." },
+    ]);
+
+    setInput("");
+
+    setTimeout(() => {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          from: "bot",
+          text: getReply(value),
+        };
+        return updated;
+      });
+
+      playReplySound(audio);
+    }, 2000);
+  };
+  return (
+    <>
+      <button
+        className="ai-chat-trigger"
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Open AI assistant"
+      >
+        <MessageCircle size={18} />
+        <span>AI ASSISTANT</span>
+      </button>
+
+      {open && (
+        <div className="ai-chatbot">
+          <button
+            className="ai-chat-backdrop"
+            type="button"
+            aria-label="Close assistant"
+            onClick={() => setOpen(false)}
+          />
+
+          <div className="ai-chat-window">
+            <div className="ai-chat-header">
+              <div>
+                <span className="ai-status-dot" />
+                <strong>AI ASSISTANT</strong>
+                <small>PORTFOLIO SYSTEM / ONLINE</small>
+              </div>
+
+              <button type="button" onClick={() => setOpen(false)}>
+                <X size={17} />
+              </button>
+            </div>
+
+            <div className="ai-chat-messages">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`ai-message ai-message-${message.from}`}
+                >
+                  {message.text}
+                </div>
+              ))}
+            </div>
+
+            <div className="ai-chat-input">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") sendMessage();
+                }}
+                placeholder="ASK SOMETHING..."
+              />
+              <button type="button" onClick={sendMessage} aria-label="Send">
+                <Send size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\components\PortfolioChatbot.tsx ====================
+
+import { getKnowledgeReply } from "../lib/chatbot/knowledge";
+import {
+  addMessage,
+  createConversationContext,
+  updateConversationContext,
+} from "../lib/chatbot/conversation-manager";
+import { routeIntent } from "../lib/chatbot/intent-router";
+import { buildAnswer } from "../lib/chatbot/answer-builder";
+import { createPortfolioActions } from "../lib/chatbot/actions";
+import { useEffect, useRef, useState } from "react";
+import {
+  UserRound,
+  Code2,
+  FolderOpen,
+  FileText,
+  Mail,
+  AudioLines, Send,
+  X,
+  ExternalLink, Globe2,
+} from "lucide-react";
+
+const profile = {
+  name: "Anshuman Pandey",
+
+  about:
+    "Anshuman Pandey is a BCA graduate focused on Cybersecurity and Security Operations. He is building practical security knowledge around defensive security, SOC workflows and security-focused projects.",
+
+  education: "BCA graduate.",
+
+  focus:
+    "Cybersecurity, Security Operations, SOC and Blue Team security.",
+
+  location: "Delhi, India",
+
+  skills: [
+    "Networking",
+    "Linux",
+    "Python",
+    "Cybersecurity",
+    "SIEM",
+    "Windows Event Logs",
+    "Threat Detection",
+    "Incident Response",
+    "Web Security",
+    "Wireshark",
+  ],
+
+  projects: [
+    "SOC Home Lab",
+    "Windows Event Log Analysis",
+    "Network Traffic Analysis",
+    "Phishing Email Analysis",
+    "SIEM Log Analysis",
+    "Linux Security Practice",
+  ],
+
+  learning: [
+    "Blue Team Operations",
+    "Log Analysis",
+    "Security Fundamentals",
+    "Threat Hunting",
+    "Malware Analysis",
+    "Cloud Security",
+  ],
+
+  career:
+    "Anshuman is building a career in Cybersecurity and Security Operations, with a long-term goal of growing toward Security Engineering.",
+
+  cv: "/cv.pdf",
+
+  email: "anshn.py@gmail.com",
+
+  linkedin:
+    "https://www.linkedin.com/in/anshuman-pandey-b847b5287",
+
+  github: "https://github.com/anshnpy",
+};
+
+const hinglishWords = [
+  "kya",
+  "kaise",
+  "kon",
+  "kaun",
+  "kaha",
+  "kahan",
+  "bta",
+  "bata",
+  "batao",
+  "mere",
+  "mera",
+  "meri",
+  "mujhe",
+  "kr",
+  "kar",
+  "hai",
+  "hain",
+  "chahiye",
+  "wala",
+  "wali",
+  "kyu",
+  "kyon",
+  "achha",
+  "accha",
+  "apne",
+  "iske",
+  "uske",
+  "bhi",
+  "kitna",
+  "kitne",
+  "karta",
+  "karte",
+  "kiya",
+  "btao",
+];
+
+function isHinglish(text: string) {
+  const words = text
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9\s]/g, "")
+    .split(/\s+/);
+
+  return hinglishWords.some((word) => words.includes(word));
+}
+
+type Action = {
+  label: string;
+  href: string;
+  external?: boolean;
+};
+
+type CyberItem = {
+  id: string;
+  description: string;
+  url: string;
+  published?: string | null;
+  lastModified?: string | null;
+  vendor?: string;
+  product?: string;
+  vulnerabilityName?: string;
+  dateAdded?: string;
+  requiredAction?: string;
+  dueDate?: string;
+};
+
+type CyberData = {
+  updated: string;
+  sources: {
+    nvd: string;
+    cisaKev: string;
+  };
+  vulnerabilities: CyberItem[];
+  exploited: CyberItem[];
+};
+type Reply = {
+  text: string;
+  actions?: Action[];
+};
+
+async function getCyberIntelligence(): Promise<CyberData> {
+  const isLocal =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
+  const apiUrl = isLocal
+    ? "/api/cyber"
+    : "/api/cyber";
+
+  const response = await fetch(apiUrl, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Cyber intelligence request failed");
+  }
+
+  return response.json();
+}
+
+function getReply(input: string): Reply {
+  const q = input.toLowerCase().trim();
+  const hinglish = isHinglish(input);
+
+  const portfolioActions = createPortfolioActions(profile);
+
+  const {
+    openCv,
+    openGithub,
+    openLinkedin,
+    sendEmail,
+  } = portfolioActions;
+
+
+  if (
+    q.includes("who is anshuman") ||
+    q.includes("who is he") ||
+    q.includes("about anshuman") ||
+    q.includes("about him") ||
+    q.includes("profile") ||
+    q.includes("tell me about anshuman")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman Pandey ek BCA graduate hain jo Cybersecurity aur Security Operations par focus kar rahe hain. Unka goal practical defensive security skills build karna aur long term mein Security Engineering ki taraf grow karna hai."
+        : "Anshuman Pandey is a BCA graduate focused on Cybersecurity and Security Operations. He is building practical defensive security skills with a long-term goal of growing toward Security Engineering.",
+      actions: [openCv, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("education") ||
+    q.includes("degree") ||
+    q.includes("qualification") ||
+    q.includes("study") ||
+    q.includes("bca")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ne BCA complete kiya hai. Ab unka primary career focus Cybersecurity aur Security Operations hai."
+        : "Anshuman has completed his BCA. His current career focus is Cybersecurity and Security Operations.",
+      actions: [openCv],
+    };
+  }
+
+  if (
+    q.includes("skill") ||
+    q.includes("skills") ||
+    q.includes("technology") ||
+    q.includes("technologies") ||
+    q.includes("tools") ||
+    q.includes("tech stack")
+  ) {
+    return {
+      text: hinglish
+        ? `Anshuman ki core security skills mein ${profile.skills.join(", ")} shamil hain.`
+        : `Anshuman's core security skills include ${profile.skills.join(", ")}.`,
+    };
+  }
+
+  if (
+    q.includes("learning") ||
+    q.includes("currently learning") ||
+    q.includes("exploring") ||
+    q.includes("learn") ||
+    q.includes("study now")
+  ) {
+    return {
+      text: hinglish
+        ? `Currently Anshuman ${profile.learning.join(", ")} par focus kar rahe hain.`
+        : `Anshuman is currently focusing on ${profile.learning.join(", ")}.`,
+    };
+  }
+
+  if (
+    q.includes("career") ||
+    q.includes("goal") ||
+    q.includes("future") ||
+    q.includes("become") ||
+    q.includes("career goal")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka current goal Cybersecurity aur SOC/Blue Team roles mein grow karna hai. Long term mein woh Security Engineering ki taraf jaana chahte hain."
+        : "Anshuman's current goal is to grow in Cybersecurity and SOC/Blue Team roles, with a long-term direction toward Security Engineering.",
+      actions: [openCv, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("role") ||
+    q.includes("job") ||
+    q.includes("looking for") ||
+    q.includes("position") ||
+    q.includes("hire") ||
+    q.includes("hiring")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman primarily entry-level SOC, Blue Team aur Cybersecurity opportunities ke liye focused hain. Long term goal Security Engineering mein grow karna hai."
+        : "Anshuman is primarily focused on entry-level SOC, Blue Team and Cybersecurity opportunities, with a long-term goal of growing toward Security Engineering.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("why should i hire") ||
+    q.includes("why hire") ||
+    q.includes("why him") ||
+    q.includes("why anshuman")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ke paas BCA background hai aur unka focus practical Cybersecurity, SOC workflows, networking, Linux, SIEM aur defensive security par hai. Woh hands-on learning aur continuous improvement par focused hain."
+        : "Anshuman combines a BCA background with a focused direction toward Cybersecurity and SOC operations. His portfolio emphasizes networking, Linux, SIEM, security monitoring and continuous hands-on learning.",
+      actions: [openCv, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("available") ||
+    q.includes("availability") ||
+    q.includes("join")
+  ) {
+    return {
+      text: hinglish
+        ? "For current availability, role requirements ya joining details, Anshuman se directly contact karna best rahega."
+        : "For current availability, role requirements or joining details, the best option is to contact Anshuman directly.",
+      actions: [sendEmail, openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("cv") ||
+    q.includes("resume") ||
+    q.includes("curriculum vitae")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka latest CV yahan available hai."
+        : "Anshuman's CV is available here.",
+      actions: [openCv],
+    };
+  }
+
+  if (
+    q.includes("github") ||
+    q.includes("code") ||
+    q.includes("repository") ||
+    q.includes("repo")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka GitHub profile yahan hai."
+        : "Anshuman's GitHub profile is available here.",
+      actions: [openGithub],
+    };
+  }
+
+  if (
+    q.includes("linkedin") ||
+    q.includes("linked in")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka LinkedIn profile yahan hai."
+        : "Anshuman's LinkedIn profile yahan available hai."
+        ,
+      actions: [openLinkedin],
+    };
+  }
+
+  if (
+    q.includes("contact") ||
+    q.includes("email") ||
+    q.includes("reach") ||
+    q.includes("mail")
+  ) {
+    return {
+      text: hinglish
+        ? `Anshuman ko ${profile.email} par contact kar sakte ho. LinkedIn aur GitHub bhi available hain.`
+        : `You can contact Anshuman at ${profile.email}. His LinkedIn and GitHub profiles are also available.`,
+      actions: [sendEmail, openLinkedin, openGithub],
+    };
+  }
+
+  if (
+    q.includes("location") ||
+    q.includes("where is he") ||
+    q.includes("where does he live") ||
+    q.includes("based")
+  ) {
+    return {
+      text: hinglish
+        ? `Anshuman ${profile.location} mein based hain.`
+        : `Anshuman is based in ${profile.location}.`,
+    };
+  }
+
+  if (
+    q.includes("soc") ||
+    q.includes("security operations") ||
+    q.includes("blue team")
+  ) {
+    return {
+      text: hinglish
+        ? "SOC aur Blue Team Anshuman ke primary career focus areas hain. Woh monitoring, log analysis, threat detection aur incident-response fundamentals build kar rahe hain."
+        : "SOC and Blue Team security are key areas of Anshuman's career focus. He is building skills around monitoring, log analysis, threat detection and incident-response fundamentals.",
+    };
+  }
+  if (
+
+    q.includes("experience") ||
+    q.includes("cybersecurity experience") ||
+    q.includes("security experience") ||
+    q.includes("work experience")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka current portfolio practical cybersecurity learning, hands-on security builds aur SOC-focused skill development ko highlight karta hai. In builds ko professional work experience ke roop mein present nahi kiya gaya hai."
+        : "Anshuman's current portfolio highlights practical cybersecurity learning, hands-on security builds and SOC-focused skill development. These builds are not presented as professional work experience.",
+      actions: [openCv, openGithub],
+    };
+  }
+
+  if (
+    q.includes("soc l1") ||
+    q.includes("soc level 1") ||
+    q.includes("soc analyst") ||
+    q.includes("soc role")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman entry-level SOC / SOC L1 aur Blue Team opportunities ko target kar rahe hain. Unka focus security monitoring, log analysis, threat detection aur incident-response fundamentals par hai."
+        : "Anshuman is targeting entry-level SOC / SOC L1 and Blue Team opportunities. His focus includes security monitoring, log analysis, threat detection and incident-response fundamentals.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("internship") ||
+    q.includes("intern") ||
+    q.includes("entry level") ||
+    q.includes("entry-level")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman entry-level Cybersecurity, SOC aur Blue Team opportunities ke liye open hain. Portfolio practical learning aur hands-on security builds ko showcase karta hai."
+        : "Anshuman is open to entry-level Cybersecurity, SOC and Blue Team opportunities. His portfolio showcases practical learning and hands-on security builds.",
+      actions: [openCv, openLinkedin, sendEmail],
+    };
+  }
+
+  if (
+    q.includes("currently building") ||
+    q.includes("current build") ||
+    q.includes("what is he building") ||
+    q.includes("building now")
+  ) {
+    return {
+      text: hinglish
+        ? `Abhi portfolio mein ${profile.projects.join(", ")} jaise security builds aur visible learning experiments showcase kiye ja rahe hain.`
+        : `The portfolio currently showcases security builds such as ${profile.projects.join(", ")} along with visible learning experiments.`,
+      actions: [openGithub],
+    };
+  }
+  if (
+    q.includes("cybersecurity") ||
+    q.includes("cyber security") ||
+    q.includes("security")
+  ) {
+    return {
+      text: hinglish
+        ? "Anshuman ka main focus Cybersecurity hai, especially SOC, Blue Team, defensive security, monitoring aur investigation."
+        : "Anshuman's main focus is Cybersecurity, particularly SOC, Blue Team, defensive security, monitoring and investigation.",
+    };
+  }
+
+  return {
+    text: hinglish
+      ? "Main Anshuman ke profile, education, skills, portfolio builds, learning areas, SOC career focus, CV, GitHub, LinkedIn aur contact information ke baare mein bata sakta hoon. Kuch specific poochho."
+      : "I can tell you about Anshuman's profile, education, skills, portfolio builds, learning areas, SOC career focus, CV, GitHub, LinkedIn and contact information. Ask me something specific.",
+  };
+}
+
+export default function PortfolioChatbot() {
+  const [open, setOpen] = useState(false);
+  const [chatMaximized, setChatMaximized] = useState(false);
+  const [input, setInput] = useState("");
+  const [thinking, setThinking] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const voiceModeRef = useRef(false);
+
+  const setVoiceModeSafe = (value: boolean) => {
+    voiceModeRef.current = value;
+    setVoiceMode(value);
+  };
+  const [speaking, setSpeaking] = useState(false);
+  const replyAudioContextRef = useRef<AudioContext | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voiceRequestRef = useRef(false);
+  const voiceGenerationRef = useRef(0);
+  const speakingRef = useRef(false);
+
+  // Text currently being spoken by the browser.
+  // Used to prevent the microphone from hearing the bot's own voice.
+  const spokenTextRef = useRef("");
+
+  const normalizeVoiceText = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const looksLikeBotEcho = (heard: string) => {
+    const spoken = normalizeVoiceText(spokenTextRef.current);
+    const current = normalizeVoiceText(heard);
+
+    if (!spoken || !current) return false;
+    if (current.length < 2) return true;
+
+    if (spoken.startsWith(current)) return true;
+
+    const words = current.split(" ");
+    if (words.length >= 2) {
+      const spokenWords = spoken.split(" ");
+
+      for (let i = 0; i <= spokenWords.length - words.length; i++) {
+        const chunk = spokenWords
+          .slice(i, i + words.length)
+          .join(" ");
+
+        if (chunk === current) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const clearSilenceTimer = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  };
+
+  const startSilenceTimer = () => {
+    clearSilenceTimer();
+
+    silenceTimerRef.current = setTimeout(() => {
+      if (voiceModeRef.current && !speakingRef.current) {
+        stopVoiceRecognition();
+        setListening(false);
+      }
+    }, 10000);
+  };
+
+  const stopVoiceRecognition = () => {
+    clearSilenceTimer();
+    const recognition = recognitionRef.current;
+
+    if (!recognition) return;
+
+    recognitionRef.current = null;
+
+    try {
+      recognition.onend = null;
+      recognition.onerror = null;
+      recognition.onresult = null;
+      recognition.stop();
+    } catch {}
+
+    setListening(false);
+  };
+
+  const closeVoiceMode = () => {
+    stopVoiceRecognition();
+
+    if (
+      typeof window !== "undefined" &&
+      "speechSynthesis" in window
+    ) {
+      window.speechSynthesis.cancel();
+    }
+
+    voiceGenerationRef.current += 1;
+    voiceRequestRef.current = false;
+    speakingRef.current = false;
+    spokenTextRef.current = "";
+
+
+    setSpeaking(false);
+    setListening(false);
+    setVoiceModeSafe(false);
+  };
+  const speakReply = (text: string) => {
+    if (
+      typeof window === "undefined" ||
+      !("speechSynthesis" in window)
+    ) {
+      return;
+    }
+
+    const generation = voiceGenerationRef.current;
+
+    // NEVER keep microphone active while TTS is speaking.
+    stopVoiceRecognition();
+
+    window.speechSynthesis.cancel();
+
+    spokenTextRef.current = text;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    const voices = window.speechSynthesis.getVoices();
+
+    const femaleHints = [
+      "female",
+      "samantha",
+      "ava",
+      "sara",
+      "sarah",
+      "karen",
+      "victoria",
+      "susan",
+      "hazel",
+      "zira",
+      "aria",
+      "jenny",
+      "sonia",
+      "libby",
+      "sophie",
+    ];
+
+    const scoreVoice = (voice: SpeechSynthesisVoice) => {
+      const name = voice.name.toLowerCase();
+      const lang = voice.lang.toLowerCase();
+
+      let score = 0;
+
+      if (lang === "en-in") score += 100;
+      else if (lang.startsWith("en-in")) score += 70;
+      else if (lang === "en-us") score += 50;
+      else if (lang.startsWith("en-us")) score += 30;
+
+      if (femaleHints.some((hint) => name.includes(hint))) {
+        score += 80;
+      }
+
+      if (
+        name.includes("natural") ||
+        name.includes("online") ||
+        name.includes("neural")
+      ) {
+        score += 25;
+      }
+
+      return score;
+    };
+
+    const preferredVoice = [...voices].sort(
+      (a, b) => scoreVoice(b) - scoreVoice(a)
+    )[0];
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.lang = "en-IN";
+    utterance.rate = 0.91;
+    utterance.pitch = 1.06;
+
+    utterance.onstart = () => {
+      if (
+        voiceGenerationRef.current !== generation ||
+        !voiceModeRef.current
+      ) {
+        window.speechSynthesis.cancel();
+        return;
+      }
+
+      speakingRef.current = true;
+      setSpeaking(true);
+
+      // IMPORTANT:
+      // Recognition stays OFF while the bot is speaking.
+      stopVoiceRecognition();
+    };
+
+    utterance.onend = () => {
+      if (
+        voiceGenerationRef.current !== generation
+      ) {
+        return;
+      }
+
+      speakingRef.current = false;
+      setSpeaking(false);
+      spokenTextRef.current = "";
+
+      if (voiceModeRef.current) {
+        setTimeout(() => {
+          if (
+            voiceModeRef.current &&
+            voiceGenerationRef.current === generation &&
+            !speakingRef.current &&
+            !window.speechSynthesis.speaking &&
+            !recognitionRef.current
+          ) {
+            startVoiceInput();
+          }
+        }, 150);
+      }
+    };
+
+    utterance.onerror = () => {
+      if (
+        voiceGenerationRef.current !== generation
+      ) {
+        return;
+      }
+
+      speakingRef.current = false;
+      setSpeaking(false);
+      spokenTextRef.current = "";
+
+      if (voiceModeRef.current) {
+        setTimeout(() => {
+          if (
+            voiceModeRef.current &&
+            !speakingRef.current &&
+            !window.speechSynthesis.speaking &&
+            !recognitionRef.current
+          ) {
+            startVoiceInput();
+          }
+        }, 150);
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const startVoiceInput = () => {
+  if (
+    typeof window === "undefined" ||
+    !voiceModeRef.current ||
+    speakingRef.current ||
+    window.speechSynthesis?.speaking
+  ) {
+    return;
+  }
+
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    console.log("SpeechRecognition is not supported by this browser.");
+    return;
+  }
+
+  if (recognitionRef.current) return;
+
+  const recognition = new SpeechRecognition();
+
+  recognition.lang = "en-IN";
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    if (recognitionRef.current === recognition) {
+      setListening(true);
+    }
+  };
+
+  recognition.onresult = (event: any) => {
+    if (recognitionRef.current !== recognition) return;
+
+    const result = event.results?.[event.resultIndex];
+    if (!result) return;
+
+    const transcript =
+      result?.[0]?.transcript?.trim() || "";
+
+    if (!transcript) return;
+
+    console.log(
+      "VOICE RESULT:",
+      transcript,
+      "FINAL:",
+      result.isFinal
+    );
+
+    if (
+      speakingRef.current ||
+      window.speechSynthesis?.speaking
+    ) {
+      return;
+    }
+
+    if (!result.isFinal) return;
+
+    const voiceCommand = transcript
+      .toLowerCase()
+      .replace(/[.,!?]/g, "")
+      .trim();
+
+    const closeVoicePhrases = [
+      "stop",
+      "bye",
+      "goodbye",
+      "close",
+      "exit",
+      "done",
+      "im done",
+      "i am done",
+      "thats all",
+      "that is all",
+      "stop listening",
+      "close voice",
+      "close the voice",
+      "close voice mode",
+      "stop voice",
+      "stop the voice",
+      "end conversation",
+      "end the conversation",
+      "you can stop"
+    ];
+
+    const shouldCloseVoice =
+      closeVoicePhrases.includes(voiceCommand);
+
+    if (shouldCloseVoice) {
+      console.log("VOICE COMMAND: Closing voice mode");
+
+      closeVoiceMode();
+      return;
+    }
+
+    try {
+      recognition.stop();
+    } catch {}
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+
+    voiceGenerationRef.current += 1;
+    voiceRequestRef.current = true;
+
+    sendMessage(transcript);
+  };
+
+  recognition.onend = () => {
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+      setListening(false);
+    }
+
+    /*
+     * Silence / timeout recovery.
+     *
+     * If the user simply stops talking and no request was sent,
+     * give the microphone another listening session.
+     *
+     * Do NOT restart while the bot is speaking.
+     */
+    if (
+      voiceModeRef.current &&
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !voiceRequestRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !recognitionRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !voiceRequestRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 700);
+    }
+  };
+
+  recognition.onerror = (event: any) => {
+    console.log("VOICE ERROR:", event?.error);
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+
+    /*
+     * Permission errors should stop the voice system.
+     * Temporary errors such as no-speech/audio-capture can recover.
+     */
+    if (
+      event?.error === "not-allowed" ||
+      event?.error === "service-not-allowed"
+    ) {
+      return;
+    }
+
+    if (
+      voiceModeRef.current &&
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !voiceRequestRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !recognitionRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !voiceRequestRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 700);
+    }
+  };
+
+  recognitionRef.current = recognition;
+
+  try {
+    recognition.start();
+  } catch (error) {
+    console.log("VOICE START ERROR:", error);
+
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
+    setListening(false);
+  }
+};
+
+useEffect(() => {
+  if (voiceMode) {
+    if (
+      !speakingRef.current &&
+      !window.speechSynthesis?.speaking &&
+      !recognitionRef.current
+    ) {
+      setTimeout(() => {
+        if (
+          voiceModeRef.current &&
+          !speakingRef.current &&
+          !window.speechSynthesis?.speaking &&
+          !recognitionRef.current
+        ) {
+          startVoiceInput();
+        }
+      }, 100);
+    }
+
+    return;
+  }
+
+  voiceGenerationRef.current += 1;
+
+  stopVoiceRecognition();
+
+  if (
+    typeof window !== "undefined" &&
+    "speechSynthesis" in window
+  ) {
+    window.speechSynthesis.cancel();
+  }
+
+  spokenTextRef.current = "";
+  speakingRef.current = false;
+
+  setSpeaking(false);
+  setListening(false);
+}, [voiceMode]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+
+
+  const [messages, setMessages] = useState<
+    { from: "bot" | "user"; text: string; actions?: Action[]; cyber?: CyberData }[]
+  >([]);
+
+
+
+  const conversationRef = useRef(
+    createConversationContext()
+  );
+
+  useEffect(() => {
+    if (!open) return;
+
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [messages, thinking, open]);
+  const primeReplyAudio = () => {
+    if (typeof window === "undefined") return;
+
+    try {
+      if (!replyAudioContextRef.current) {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as typeof window & {
+            webkitAudioContext?: typeof AudioContext;
+          }).webkitAudioContext;
+
+        if (!AudioCtx) return;
+
+        replyAudioContextRef.current = new AudioCtx();
+      }
+
+      if (replyAudioContextRef.current.state === "suspended") {
+        void replyAudioContextRef.current.resume();
+      }
+    } catch {}
+  };
+
+  const playReplySound = () => {
+    const ctx = replyAudioContextRef.current;
+
+    if (!ctx) return;
+
+    const play = () => {
+      try {
+        const now = ctx.currentTime;
+        const master = ctx.createGain();
+
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.exponentialRampToValueAtTime(0.045, now + 0.01);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + 0.30);
+        master.connect(ctx.destination);
+
+        [
+          [659.25, 0, 0.16],
+          [783.99, 0.07, 0.18],
+          [1046.5, 0.14, 0.16],
+        ].forEach(([frequency, start, duration]) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = "sine";
+          osc.frequency.value = frequency;
+
+          gain.gain.setValueAtTime(0.0001, now + start);
+          gain.gain.exponentialRampToValueAtTime(0.5, now + start + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+
+          osc.connect(gain);
+          gain.connect(master);
+
+          osc.start(now + start);
+          osc.stop(now + start + duration + 0.02);
+        });
+      } catch {}
+    };
+
+    if (ctx.state === "suspended") {
+      void ctx.resume().then(play).catch(() => {});
+    } else {
+      play();
+    }
+  };
+
+  const sendMessage = async (text = input) => {
+    primeReplyAudio();
+    const value = text.trim();
+
+    const intentResult = routeIntent(value);
+
+    conversationRef.current = addMessage(
+      conversationRef.current,
+      "user",
+      value
+    );
+
+    conversationRef.current = updateConversationContext(
+      conversationRef.current,
+      {
+        intent: intentResult.intent,
+        topic: intentResult.topic,
+      }
+    );
+
+    console.log(
+      "CHAT CONTEXT:",
+      conversationRef.current
+    );
+
+    if (!value || (thinking && !voiceRequestRef.current)) return;
+
+    const isFirstMessage = messages.length === 0;
+    const fridayWelcome =
+      "Hiiii! I'm FRIDAY, Anshuman's AI Assistant. How can I help you today?";
+
+
+    setMessages((prev) => [
+      ...prev,
+      { from: "user", text: value },
+    ]);
+
+    setInput("");
+    setThinking(true);
+    const wasVoiceRequest = voiceRequestRef.current;
+    const requestGeneration = voiceGenerationRef.current;
+    voiceRequestRef.current = false;
+
+    const isCyberNewsRequest =
+      intentResult.intent === "cyber-news";
+
+    if (isCyberNewsRequest) {
+      try {
+        const data = await getCyberIntelligence();
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            text: "LIVE CYBER INTELLIGENCE",
+            cyber: data,
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            text: "I couldn't retrieve the live cybersecurity feed right now. Please try again shortly.",
+          },
+        ]);
+      } finally {
+        setThinking(false);
+        playReplySound();
+      }
+
+      return;
+    }
+
+    setTimeout(async () => {
+      let reply = await getKnowledgeReply(
+        value,
+        conversationRef.current
+      );
+
+      if (!reply) {
+        reply = getReply(value);
+      }
+
+      const answer = buildAnswer(
+        reply.text,
+        reply.actions
+      );
+
+
+      conversationRef.current = addMessage(
+        conversationRef.current,
+        "assistant",
+        reply.text
+      );
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          from: "bot",
+          text: answer.text,
+          actions: answer.actions,
+        },
+      ]);
+
+      setThinking(false);
+      playReplySound();
+
+      if (
+        wasVoiceRequest &&
+        voiceGenerationRef.current === requestGeneration
+      ) {
+        speakReply(answer.text);
+      }
+    }, 900);
+  };
+  const backToMenu = () => {
+    setMessages([]);
+    setThinking(false);
+    setInput("");
+  };
+  const quick = (text: string) => {
+    sendMessage(text);
+  };
+
+  const openAction = (action: Action) => {
+    if (action.href.startsWith("mailto:")) {
+      window.location.href = action.href;
+      return;
+    }
+
+    if (action.external) {
+      window.open(action.href, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    window.open(action.href, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <>
+      {!open && (
+        <button
+          type="button"
+          className="orbit-chat-node"
+          onClick={() => { primeReplyAudio(); setOpen(true); }}
+          aria-label="Open portfolio chat"
+        >
+          <span className="orbit-ring orbit-ring-1" />
+          <span className="orbit-ring orbit-ring-2" />
+          <span className="orbit-ring orbit-ring-3" />
+
+          <span className="orbit-particle orbit-particle-1" />
+          <span className="orbit-particle orbit-particle-2" />
+          <span className="orbit-particle orbit-particle-3" />
+
+          <span className="orbit-chat-icon">
+            <span className="orbit-chat-dots">
+              <i />
+              <i />
+              <i />
+            </span>
+          </span>
+
+          <span className="orbit-chat-label">CHAT</span>
+        </button>
+      )}
+
+      {open && (
+        <div className="orbit-chat-overlay">
+          <button
+            className="orbit-chat-backdrop"
+            type="button"
+            aria-label="Close chat"
+            onClick={() => { closeVoiceMode(); setOpen(false); }}
+          />
+
+          <section className={`orbit-chat-window${chatMaximized ? " orbit-chat-window-maximized" : ""}`}>
+
+      {voiceMode && (
+        <div className="orbit-voice-mode">
+          <div className="orbit-voice-panel">
+            <button
+              type="button"
+              className="orbit-voice-close"
+              onClick={() => {
+                closeVoiceMode();
+              }}
+              aria-label="Close voice mode"
+            >
+              <X size={20} />
+            </button>
+
+            <div className={`orbit-voice-orb ${listening ? "is-listening" : ""} ${speaking ? "is-speaking" : ""}`}>
+              <div className="orbit-voice-core">
+                <AudioLines size={42} strokeWidth={1.8} />
+              </div>
+              <span className="orbit-voice-ring ring-one" />
+              <span className="orbit-voice-ring ring-two" />
+              <span className="orbit-voice-ring ring-three" />
+            </div>
+
+            <div className="orbit-voice-status">
+              <span className="orbit-voice-dot" />
+              <strong>{speaking ? "SPEAKING..." : listening ? "LISTENING..." : "READY"}</strong>
+            </div>
+
+            <p className="orbit-voice-caption">
+              {speaking ? "Orbit AI is speaking" : listening ? "I am listening..." : "Tap the voice button and speak"}
+            </p>
+          </div>
+        </div>
+      )}
+
+            <div className="orbit-grid" />
+
+            <header className="orbit-header">
+              <div className="orbit-online">
+                <span />
+                ONLINE
+              </div>
+
+              <button
+                type="button"
+                className="orbit-maximize"
+                onClick={() => setChatMaximized((value) => !value)}
+                aria-label={chatMaximized ? "Restore chat" : "Maximize chat"}
+                title={chatMaximized ? "Restore" : "Maximize"}
+              >
+                <span aria-hidden="true">{chatMaximized ? "⤢" : "⛶"}</span>
+              </button>
+
+              <button
+                type="button"
+                className="orbit-close"
+                onClick={() => { closeVoiceMode(); setOpen(false); }}
+                aria-label="Close"
+              >
+                <X size={17} />
+              </button>
+            </header>
+
+            {messages.length > 0 && (
+              <div className="orbit-chat-topbar">
+              <button
+                type="button"
+                className="orbit-back-button"
+                onClick={backToMenu}
+              >
+                ← BACK TO MENU
+              </button>
+              </div>
+            )}
+
+            <div className="orbit-chat-content">
+              {messages.length === 0 && !thinking && (
+                <div className="orbit-welcome">
+                  <div className="orbit-mini-radar">
+                    <span />
+                  </div>
+
+                  <div>
+                    <h3>
+                      Hiiii! I'm FRIDAY, Anshuman's AI Assistant. <span>👋</span>
+                    </h3>
+
+                    <p>What do you want to know?</p>
+                  </div>
+                </div>
+              )}
+
+              {messages.length === 0 && !thinking && (
+                <div className="orbit-quick-actions">
+                  <button type="button" onClick={() => quick("Tell me about Anshuman")}>
+                    <UserRound size={15} />
+                    ABOUT ME
+                  </button>
+
+                  <button type="button" onClick={() => quick("What are Anshuman's skills?")}>
+                    <Code2 size={15} />
+                    SKILLS
+                  </button>
+
+                  <button type="button" onClick={() => quick("Tell me about the projects")}>
+                    <FolderOpen size={15} />
+                    PROJECTS
+                  </button>
+
+                  <button type="button" onClick={() => quick("Where is the CV?")}>
+                    <FileText size={15} />
+                    CV / RESUME
+                  </button>
+
+                  <button
+                    type="button"
+                    className="orbit-news-button"
+                    onClick={() => quick("Show me the latest cybersecurity news")}
+                  >
+                    <Globe2 size={15} />
+                    CYBER NEWS
+                  </button>
+
+                  <button
+                    type="button"
+                    className="orbit-contact-button"
+                    onClick={() => quick("How can I contact Anshuman?")}
+                  >
+                    <Mail size={15} />
+                    CONTACT
+                  </button>
+                </div>
+              )}
+
+              {messages.length > 0 && (
+                <div className="orbit-messages">
+
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`orbit-message ${
+                        message.from === "user"
+                          ? "orbit-user-message"
+                          : "orbit-bot-message"
+                      }`}
+                    >
+                      <small>
+                        {message.from === "user" ? "YOU" : "SYSTEM"}
+                      </small>
+
+                      <p>{message.text}</p>
+                      {message.cyber && (
+                        <div className="orbit-cyber-feed">
+                          <div className="orbit-cyber-feed-head">
+                  <span>LIVE SECURITY FEED</span>
+                            <small>NVD + CISA KEV</small>
+                          </div>
+
+                          {message.cyber.exploited.length > 0 && (
+                            <div className="orbit-cyber-group">
+                              <div className="orbit-cyber-group-title">
+                                <span>01</span>
+                                <strong>ACTIVELY EXPLOITED</strong>
+                              </div>
+
+                              {message.cyber.exploited.slice(0, 3).map((item) => (
+                                <div className="orbit-cyber-card" key={item.id}>
+                                  <div className="orbit-cyber-card-top">
+                                    <strong>{item.id}</strong>
+                                    <span>KEV</span>
+                                  </div>
+
+                                  <h4>
+                                    {item.vulnerabilityName || item.description}
+                                  </h4>
+
+                                    <p>{item.vendor} · {item.product}</p>
+
+                                  <div className="orbit-cyber-card-meta">
+                                    <span>
+                                    ADDED {item.dateAdded || "UNKNOWN"}
+                                    </span>
+
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      VIEW ADVISORY
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {message.cyber.vulnerabilities.length > 0 && (
+                            <div className="orbit-cyber-group">
+                              <div className="orbit-cyber-group-title">
+                                <span>02</span>
+                                <strong>RECENT CVEs</strong>
+                              </div>
+
+                              {message.cyber.vulnerabilities.slice(0, 3).map((item) => (
+                                <div className="orbit-cyber-card" key={item.id}>
+                                  <div className="orbit-cyber-card-top">
+                                    <strong>{item.id}</strong>
+                                    <span>NVD</span>
+                                  </div>
+
+                                  <p>{item.description}</p>
+
+                                  <div className="orbit-cyber-card-meta">
+                                    <span>
+                                      {item.published
+                                        ? new Date(item.published).toLocaleDateString()
+                                        : "RECENT"}
+                                    </span>
+
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      VIEW CVE
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="orbit-cyber-updated">
+                            UPDATED {new Date(message.cyber.updated).toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+
+                      {message.actions && message.actions.length > 0 && (
+                        <div className="orbit-message-actions">
+                          {message.actions.map((action) => (
+                            <button
+                              type="button"
+                              key={action.label}
+                              onClick={() => openAction(action)}
+                            >
+                              {action.label}
+                              <ExternalLink size={12} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+
+              {thinking && (
+                <div className="orbit-thinking">
+                  <div className="orbit-thinking-radar">
+                    <span />
+                  </div>
+
+                  <strong>ANALYZING YOUR QUERY</strong>
+
+                  <div className="orbit-thinking-dots">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+
+                  <small>Please wait a moment</small>
+                </div>
+              )}
+            </div>
+
+            <div className="orbit-secure-line">
+              <span />
+              SECURE CHANNEL
+              <span />
+            </div>
+
+            <div className="orbit-input-area">
+              <input
+                value={input}
+                disabled={thinking}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") sendMessage();
+                }}
+                placeholder={thinking ? "Please wait..." : "Ask anything..."}
+              />
+
+              <button
+                type="button"
+                disabled={thinking}
+                onClick={() => sendMessage()}
+                aria-label="Send message"
+                title="Send"
+                className="send-btn"
+              >
+                <Send size={19} strokeWidth={2.3} />
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+  if (voiceModeRef.current) {
+    closeVoiceMode();
+    return;
+  }
+
+  setVoiceModeSafe(true);
+
+  setTimeout(() => {
+    startVoiceInput();
+  }, 300);
+}} aria-label="Voice input"
+                title={listening ? "Stop listening" : "Speak"}
+                className={`voice-btn ${listening ? "voice-active" : ""}`}
+              >
+                <AudioLines size={21} strokeWidth={2.4} />
+              </button>
+            </div>
+
+            <footer className="orbit-footer">
+              <span>SECURE & PRIVATE</span>
+              <span>SMART RESPONSES</span>
+              <span>ALWAYS ONLINE</span>
+            </footer>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\lib\chatbot\actions.ts ====================
+
+export type ChatAction = {
+  label: string;
+  href: string;
+  external?: boolean;
+};
+
+export type PortfolioActionProfile = {
+  cv: string;
+  github: string;
+  linkedin: string;
+  email: string;
+};
+
+export function createPortfolioActions(
+  profile: PortfolioActionProfile
+) {
+  const openCv: ChatAction = {
+    label: "OPEN CV",
+    href: profile.cv,
+  };
+
+  const openGithub: ChatAction = {
+    label: "OPEN GITHUB",
+    href: profile.github,
+    external: true,
+  };
+
+  const openLinkedin: ChatAction = {
+    label: "OPEN LINKEDIN",
+    href: profile.linkedin,
+    external: true,
+  };
+
+  const sendEmail: ChatAction = {
+    label: "SEND EMAIL",
+    href: `mailto:${profile.email}`,
+  };
+
+  return {
+    openCv,
+    openGithub,
+    openLinkedin,
+    sendEmail,
+  };
+}
+
+export function getActionForQuery(
+  input: string,
+  actions: ReturnType<typeof createPortfolioActions>
+): ChatAction | null {
+  const q = input.toLowerCase().trim();
+
+  if (
+    /\b(open|download|view|show)\b.*\b(cv|resume)\b/i.test(q) ||
+    /\b(cv|resume)\b.*\b(open|download|view|show)\b/i.test(q)
+  ) {
+    return actions.openCv;
+  }
+
+  if (
+    /\b(open|visit|go to|show)\b.*\bgithub\b/i.test(q) ||
+    q === "github"
+  ) {
+    return actions.openGithub;
+  }
+
+  if (
+    /\b(open|visit|go to|show)\b.*\blinkedin\b/i.test(q) ||
+    q === "linkedin"
+  ) {
+    return actions.openLinkedin;
+  }
+
+  if (
+    /\b(contact|contact me|email|email me|mail)\b/i.test(q)
+  ) {
+    return actions.sendEmail;
+  }
+
+  return null;
+}
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\lib\chatbot\answer-builder.ts ====================
+
+export type AnswerAction = {
+  label: string;
+  href: string;
+  external?: boolean;
+};
+
+export type BuiltAnswer = {
+  text: string;
+  actions?: AnswerAction[];
+};
+
+export function buildAnswer(
+  text: string,
+  actions?: AnswerAction[]
+): BuiltAnswer {
+  return {
+    text: text.trim(),
+    ...(actions && actions.length > 0
+      ? { actions }
+      : {}),
+  };
+}
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\lib\chatbot\conversation-manager.ts ====================
+
+export type ChatRole = "user" | "assistant";
+
+export type ChatMessage = {
+  role: ChatRole;
+  text: string;
+};
+
+export type ConversationContext = {
+  messages: ChatMessage[];
+  currentTopic: string | null;
+  lastIntent: string | null;
+};
+
+export function createConversationContext(): ConversationContext {
+  return {
+    messages: [],
+    currentTopic: null,
+    lastIntent: null,
+  };
+}
+
+export function addMessage(
+  context: ConversationContext,
+  role: ChatRole,
+  text: string
+): ConversationContext {
+  return {
+    ...context,
+    messages: [
+      ...context.messages,
+      { role, text },
+    ].slice(-12),
+  };
+}
+
+export function updateConversationContext(
+  context: ConversationContext,
+  values: {
+    topic?: string | null;
+    intent?: string | null;
+  }
+): ConversationContext {
+  return {
+    ...context,
+    ...(values.topic !== undefined
+      ? { currentTopic: values.topic }
+      : {}),
+    ...(values.intent !== undefined
+      ? { lastIntent: values.intent }
+      : {}),
+  };
+}
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\lib\chatbot\intent-router.ts ====================
+
+export type ChatIntent =
+  | "portfolio"
+  | "cyber-news"
+  | "action"
+  | "general"
+  | "unknown";
+
+export type IntentResult = {
+  intent: ChatIntent;
+  topic: string | null;
+  confidence: number;
+};
+
+const cyberNewsPatterns = [
+  /\bcyber news\b/i,
+  /\bsecurity news\b/i,
+  /\blatest cybersecurity\b/i,
+  /\blatest vulnerabilities?\b/i,
+  /\blatest cve(s)?\b/i,
+];
+
+const actionPatterns = [
+  /\b(open|download|view|show)\b.*\b(cv|resume)\b/i,
+  /\b(open|visit|go to)\b.*\bgithub\b/i,
+  /\b(open|visit|go to)\b.*\blinkedin\b/i,
+  /\b(contact|email|mail)\b/i,
+];
+
+const portfolioPatterns: Array<{
+  topic: string;
+  patterns: RegExp[];
+}> = [
+  {
+    topic: "profile",
+    patterns: [
+      /\bwho is anshuman\b/i,
+      /\babout anshuman\b/i,
+      /\btell me about anshuman\b/i,
+      /\bprofile\b/i,
+      /\bbackground\b/i,
+    ],
+  },
+  {
+    topic: "skills",
+    patterns: [
+      /\bskills?\b/i,
+      /\btechnologies\b/i,
+      /\btech stack\b/i,
+    ],
+  },
+  {
+    topic: "projects",
+    patterns: [
+      /\bprojects?\b/i,
+      /\bproject work\b/i,
+      /\bportfolio projects\b/i,
+    ],
+  },
+  {
+    topic: "career",
+    patterns: [
+      /\bcareer\b/i,
+      /\bexperience\b/i,
+      /\binternship\b/i,
+      /\bjob\b/i,
+      /\bgoals?\b/i,
+    ],
+  },
+  {
+    topic: "learning",
+    patterns: [
+      /\blearning\b/i,
+      /\bcurrently learning\b/i,
+      /\bstudying\b/i,
+    ],
+  },
+  {
+    topic: "education",
+    patterns: [
+      /\beducation\b/i,
+      /\bdegree\b/i,
+      /\bqualification\b/i,
+      /\bstudy\b/i,
+      /\bbca\b/i,
+    ],
+  },
+  {
+    topic: "contact",
+    patterns: [
+      /\bcontact\b/i,
+      /\breach\b/i,
+      /\bemail\b/i,
+      /\bmail\b/i,
+    ],
+  },
+];
+
+export function routeIntent(input: string): IntentResult {
+  const query = input.trim();
+
+  if (!query) {
+    return {
+      intent: "unknown",
+      topic: null,
+      confidence: 0,
+    };
+  }
+
+  if (cyberNewsPatterns.some((pattern) => pattern.test(query))) {
+    return {
+      intent: "cyber-news",
+      topic: "cyber-news",
+      confidence: 0.98,
+    };
+  }
+
+  if (actionPatterns.some((pattern) => pattern.test(query))) {
+    return {
+      intent: "action",
+      topic: null,
+      confidence: 0.95,
+    };
+  }
+
+  for (const item of portfolioPatterns) {
+    if (item.patterns.some((pattern) => pattern.test(query))) {
+      return {
+        intent: "portfolio",
+        topic: item.topic,
+        confidence: 0.9,
+      };
+    }
+  }
+
+  return {
+    intent: "general",
+    topic: null,
+    confidence: 0.4,
+  };
+}
+
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\lib\chatbot\knowledge.ts ====================
+
+export type KnowledgeAction = {
+  label: string;
+  href: string;
+};
+
+export type KnowledgeReply = {
+  text: string;
+  actions?: KnowledgeAction[];
+  cyber?: unknown;
+};
+
+const knowledgeAliases: Record<string, string> = {
+  "windows logs": "/data/projects/windows-event-log-analysis.md",
+  "event logs": "/data/projects/windows-event-log-analysis.md",
+
+  "wireshark": "/data/projects/network-traffic-analysis.md",
+  "packet analysis": "/data/projects/network-traffic-analysis.md",
+  "network traffic": "/data/projects/network-traffic-analysis.md",
+  "network analysis": "/data/projects/network-traffic-analysis.md",
+
+  "phishing": "/data/projects/phishing-email-analysis.md",
+  "phishing email": "/data/projects/phishing-email-analysis.md",
+  "email security": "/data/projects/phishing-email-analysis.md",
+
+  "siem": "/data/projects/siem-log-analysis.md",
+  "siem logs": "/data/projects/siem-log-analysis.md",
+  "log analysis": "/data/projects/siem-log-analysis.md",
+
+  "linux security": "/data/projects/linux-security-practice.md",
+  "linux practice": "/data/projects/linux-security-practice.md",
+
+  "completed projects": "/data/completed-projects.md",
+  "completed builds": "/data/completed-projects.md",
+  "finished projects": "/data/completed-projects.md",
+
+  "soc home lab": "/data/projects/soc-home-lab.md",
+  "wazuh soc": "/data/projects/soc-home-lab.md",
+  "soc dashboard": "/data/projects/soc-home-lab.md",
+
+  "incident response platform": "/data/projects/incident-response-platform.md",
+  "incident response": "/data/projects/incident-response-platform.md",
+  "investigation platform": "/data/projects/incident-response-platform.md",
+
+  "malware analysis sandbox": "/data/projects/malware-analysis-sandbox.md",
+  "malware sandbox": "/data/projects/malware-analysis-sandbox.md",
+  "malware analysis": "/data/projects/malware-analysis-sandbox.md",
+
+  "persisthawk": "/data/projects/persisthawk.md",
+  "persist hawk": "/data/projects/persisthawk.md",
+  "persistence hunter": "/data/projects/persisthawk.md",
+  "skills": "/data/skills.md",
+  "technologies": "/data/skills.md",
+  "tech stack": "/data/skills.md",
+
+  "learning": "/data/learning.md",
+  "currently learning": "/data/learning.md",
+
+  "career": "/data/career.md",
+  "career goal": "/data/career.md",
+
+  "identity": "/data/identity.md",
+  "who is anshuman": "/data/identity.md",
+
+
+  "contact": "/data/contact.md",
+  "contact details": "/data/contact.md",
+  "how to contact": "/data/contact.md",
+
+  "portfolio": "/data/portfolio.md",
+  "portfolio overview": "/data/portfolio.md",
+  "what is this portfolio": "/data/portfolio.md",
+
+  "faq": "/data/faq.md",
+  "frequently asked": "/data/faq.md",
+  "profile": "/data/profile.md",
+  "about anshuman": "/data/profile.md",
+};
+
+export function getKnowledgePath(
+  input: string
+): string | null {
+  const q = input.toLowerCase().trim();
+
+  if (!q) return null;
+
+  const normalized = q.replace(/\s+/g, " ");
+
+  if (
+    normalized.includes("completed") &&
+    (
+      normalized.includes("project") ||
+      normalized.includes("build") ||
+      normalized.includes("portfolio")
+    )
+  ) {
+    return "/data/completed-projects.md";
+  }
+
+  const matches = Object.entries(knowledgeAliases)
+    .filter(([alias]) => {
+      const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(`\\b${escaped}\\b`, "i");
+
+      return pattern.test(normalized);
+    })
+    .map(([alias, path]) => {
+      const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(`\\b${escaped}\\b`, "i");
+
+      let score = alias.length;
+
+      // Exact phrase match gets the strongest preference.
+      if (normalized === alias) {
+        score += 1000;
+      }
+
+      // Phrase appearing as a clean word-boundary match.
+      if (pattern.test(normalized)) {
+        score += 100;
+      }
+
+      // Project-specific phrases are more valuable than broad topics.
+      if (
+        path.includes("/projects/") &&
+        alias.length >= 6
+      ) {
+        score += 150;
+      }
+
+      // Broad one-word aliases should not easily hijack a specific query.
+      if (
+        alias === "skills" ||
+        alias === "learning" ||
+        alias === "career" ||
+        alias === "profile" ||
+        alias === "portfolio" ||
+        alias === "contact"
+      ) {
+        score -= 40;
+      }
+
+      return {
+        alias,
+        path,
+        score,
+      };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return b.alias.length - a.alias.length;
+    });
+
+  return matches[0]?.path ?? null;
+}
+
+export async function getKnowledgeFile(
+  path: string
+): Promise<string | null> {
+  try {
+    const response = await fetch(path, {
+      cache: "force-cache",
+    });
+
+    if (!response.ok) return null;
+
+    return await response.text();
+  } catch {
+    return null;
+  }
+}
+
+export function extractKnowledgeAnswer(
+  knowledge: string,
+  input: string
+): string | null {
+  const q = input.toLowerCase().trim();
+
+  const sections = knowledge
+    .split(/\n(?=## )/g)
+    .map((section) => section.trim())
+    .filter(Boolean);
+
+  const findSection = (...names: string[]) => {
+    const normalizedNames = names.map((name) =>
+      name.toLowerCase().trim()
+    );
+
+    return sections.find((section) => {
+      const normalized = section.toLowerCase();
+
+      return normalizedNames.some((name) => {
+        const heading = normalized.match(/^##\s+(.+)$/m)?.[1]?.trim();
+
+        if (!heading) return false;
+
+        if (heading === name) return true;
+        if (heading.includes(name)) return true;
+        if (name.includes(heading)) return true;
+
+        return false;
+      });
+    });
+  };
+
+  let preferredSection: string | undefined;
+
+  // Most specific question types first.
+  if (
+    q.includes("interview") ||
+    q.includes("interview answer") ||
+    q.includes("explain for interview")
+  ) {
+    preferredSection = findSection(
+      "interview explanation"
+    );
+  } else if (
+    q.includes("tool") ||
+    q.includes("tools") ||
+    q.includes("technology") ||
+    q.includes("technologies") ||
+    q.includes("tech stack") ||
+    q.includes("what did you use")
+  ) {
+    preferredSection = findSection(
+      "tools",
+      "tool",
+      "technologies",
+      "technology",
+      "skills demonstrated",
+      "analysis areas"
+    );
+  } else if (
+    q.includes("objective") ||
+    q.includes("goal") ||
+    q.includes("purpose") ||
+    q.includes("why")
+  ) {
+    preferredSection = findSection(
+      "objective",
+      "goal",
+      "purpose"
+    );
+  } else if (
+    q.includes("how") ||
+    q.includes("workflow") ||
+    q.includes("process") ||
+    q.includes("investigation") ||
+    q.includes("approach") ||
+    q.includes("steps")
+  ) {
+    preferredSection = findSection(
+      "investigation workflow",
+      "analysis workflow",
+      "workflow",
+      "process",
+      "approach"
+    );
+  } else if (
+    q.includes("skill") ||
+    q.includes("skills") ||
+    q.includes("what did he learn") ||
+    q.includes("what was learned") ||
+    q.includes("learned")
+  ) {
+    preferredSection = findSection(
+      "skills demonstrated",
+      "skills",
+      "learning"
+    );
+  } else if (
+    q.includes("detail") ||
+    q.includes("detailed") ||
+    q.includes("deep dive") ||
+    q.includes("deep explanation") ||
+    q.includes("explain fully")
+  ) {
+    preferredSection = findSection(
+      "detailed answer",
+      "detailed explanation",
+      "overview"
+    );
+  }
+
+  if (!preferredSection) {
+    preferredSection = findSection(
+      "short answer",
+      "overview"
+    );
+  }  if (!preferredSection) {
+    return null;
+  }
+
+  return preferredSection
+    .replace(/^##\s+.*$/m, "")
+    .trim();
+}
+
+export type KnowledgeContext = {
+  messages?: Array<{
+    role: "user" | "assistant";
+    text: string;
+  }>;
+  currentTopic?: string | null;
+};
+
+export async function getKnowledgeReply(
+  input: string,
+  context?: KnowledgeContext
+): Promise<KnowledgeReply | null> {
+  const userMessages =
+    (context?.messages ?? [])
+      .filter((message) => message.role === "user")
+      .map((message) => message.text);
+
+  const previousUserMessage =
+    userMessages.length > 1
+      ? userMessages[userMessages.length - 2]
+      : "";
+
+  const retrievalQuery = [
+    previousUserMessage,
+    input,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const path =
+    getKnowledgePath(input) ??
+    getKnowledgePath(retrievalQuery);
+
+  if (!path) return null;
+
+  const knowledge = await getKnowledgeFile(path);
+
+  if (!knowledge) return null;
+
+  const answer = extractKnowledgeAnswer(
+    knowledge,
+    input
+  );
+
+  if (!answer) return null;
+
+  return {
+    text: answer,
+  };
+}
+
+
+
+
+
+
+
+
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\lib\chatbot\voice.ts ====================
+
+export type SpeechVoicePreference = {
+  primaryLanguage?: string;
+  fallbackLanguage?: string;
+};
+
+export function isSpeechSupported(): boolean {
+  if (typeof window === "undefined") return false;
+
+  return (
+    "speechSynthesis" in window ||
+    "SpeechRecognition" in window ||
+    "webkitSpeechRecognition" in window
+  );
+}
+
+export function getSpeechRecognitionConstructor(): any | null {
+  if (typeof window === "undefined") return null;
+
+  return (
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition ||
+    null
+  );
+}
+
+export function getPreferredSpeechVoice(
+  preference: SpeechVoicePreference = {
+    primaryLanguage: "en-IN",
+    fallbackLanguage: "en-US",
+  }
+): SpeechSynthesisVoice | null {
+  if (
+    typeof window === "undefined" ||
+    !("speechSynthesis" in window)
+  ) {
+    return null;
+  }
+
+  const voices = window.speechSynthesis.getVoices();
+
+  if (!voices.length) return null;
+
+  const primary = preference.primaryLanguage?.toLowerCase() ?? "en-in";
+  const fallback = preference.fallbackLanguage?.toLowerCase() ?? "en-us";
+
+  const femaleHints = [
+    "female",
+    "samantha",
+    "ava",
+    "sara",
+    "sarah",
+    "karen",
+    "victoria",
+    "susan",
+    "hazel",
+    "zira",
+    "aria",
+    "jenny",
+    "sonia",
+    "libby",
+    "sophie",
+  ];
+
+  const scoreVoice = (voice: SpeechSynthesisVoice) => {
+    const name = voice.name.toLowerCase();
+    const lang = voice.lang.toLowerCase();
+
+    let score = 0;
+
+    if (lang === primary) score += 100;
+    if (lang.startsWith(primary.split("-")[0])) score += 60;
+    if (lang === fallback) score += 50;
+    if (lang.startsWith(fallback.split("-")[0])) score += 30;
+
+    if (femaleHints.some((hint) => name.includes(hint))) {
+      score += 80;
+    }
+
+    if (
+      name.includes("natural") ||
+      name.includes("online") ||
+      name.includes("neural")
+    ) {
+      score += 25;
+    }
+
+    return score;
+  };
+
+  return [...voices]
+    .map((voice) => ({
+      voice,
+      score: scoreVoice(voice),
+    }))
+    .sort((a, b) => b.score - a.score)[0]?.voice ?? null;
+}
+
+export function prepareSpeechText(text: string): string {
+  return text
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*\/\s*/g, " or ")
+    .replace(/\s*·\s*/g, ", ")
+    .replace(/\s*•\s*/g, ", ")
+    .replace(/\s*[-–—]\s*/g, ", ")
+    .replace(/\bSOC\b/g, "S O C")
+    .replace(/\bSIEM\b/g, "S I E M")
+    .replace(/\bCV\b/g, "C V")
+    .trim();
+}
+export function cancelSpeech(): void {
+  if (
+    typeof window === "undefined" ||
+    !("speechSynthesis" in window)
+  ) {
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+}
+
+export function speakText(
+  text: string,
+  options?: {
+    rate?: number;
+    pitch?: number;
+    voice?: SpeechSynthesisVoice | null;
+    onStart?: () => void;
+    onEnd?: () => void;
+    onError?: () => void;
+  }
+): SpeechSynthesisUtterance | null {
+  if (
+    typeof window === "undefined" ||
+    !("speechSynthesis" in window) ||
+    !text.trim()
+  ) {
+    return null;
+  }
+
+  cancelSpeech();
+
+  const utterance = new SpeechSynthesisUtterance(
+    text
+  );
+
+  utterance.rate = options?.rate ?? 0.95;
+  utterance.pitch = options?.pitch ?? 1;
+
+  if (options?.voice) {
+    utterance.voice = options.voice;
+  }
+
+  if (options?.onStart) {
+    utterance.onstart = options.onStart;
+  }
+
+  if (options?.onEnd) {
+    utterance.onend = options.onEnd;
+  }
+
+  if (options?.onError) {
+    utterance.onerror = options.onError;
+  }
+
+  window.speechSynthesis.speak(utterance);
+
+  return utterance;
+}
+
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\lib\utils.ts ====================
+
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+
+
+==================== FILE: C:\Users\anshu\OneDrive\Documents\anshnportfolio\functions\api\cyber.ts ====================
+
+interface Env {}
+
+type NvdItem = {
+  cve: {
+    id: string;
+    published?: string;
+    lastModified?: string;
+    descriptions?: {
+      lang: string;
+      value: string;
+    }[];
+  };
+};
+
+type KevItem = {
+  cveID: string;
+  vendorProject: string;
+  product: string;
+  vulnerabilityName: string;
+  dateAdded: string;
+  shortDescription: string;
+  requiredAction: string;
+  dueDate: string;
+};
+
+export const onRequestGet = async () => {
+  try {
+    const nvdUrl =
+      "https://services.nvd.nist.gov/rest/json/cves/2.0?pubStartDate=2026-07-17T00%3A00%3A00.000Z&pubEndDate=2026-08-16T23%3A59%3A59.999Z&resultsPerPage=10";
+
+    const cisaUrl =
+      "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
+
+    const [nvdResponse, cisaResponse] = await Promise.all([
+      fetch(nvdUrl, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "AnshumanPortfolio/1.0",
+        },
+      }),
+
+      fetch(cisaUrl, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "AnshumanPortfolio/1.0",
+        },
+      }),
+    ]);
+
+    if (!nvdResponse.ok || !cisaResponse.ok) {
+      return new Response(
+        JSON.stringify({
+          error: "Cybersecurity source request failed",
+          nvd: {
+            ok: nvdResponse.ok,
+            status: nvdResponse.status,
+          },
+          cisa: {
+            ok: cisaResponse.ok,
+            status: cisaResponse.status,
+          },
+        }),
+        {
+          status: 502,
+          headers: {
+            "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
+    }
+
+    const nvdData = (await nvdResponse.json()) as {
+      vulnerabilities?: NvdItem[];
+    };
+
+    const cisaData = (await cisaResponse.json()) as {
+      vulnerabilities?: KevItem[];
+    };
+
+    const vulnerabilities = [...(nvdData.vulnerabilities ?? [])].reverse().map((item) => {
+      const cve = item.cve;
+
+      return {
+        id: cve.id,
+        published: cve.published ?? null,
+        lastModified: cve.lastModified ?? null,
+        description:
+          cve.descriptions?.find(
+            (description) => description.lang === "en"
+          )?.value ?? "No description available.",
+        url: `https://nvd.nist.gov/vuln/detail/${cve.id}`,
+      };
+    });
+
+    const exploited = (cisaData.vulnerabilities ?? [])
+      .sort((a, b) => b.dateAdded.localeCompare(a.dateAdded))
+      .slice(0, 10)
+      .map((item) => ({
+        id: item.cveID,
+        vendor: item.vendorProject,
+        product: item.product,
+        vulnerabilityName: item.vulnerabilityName,
+        dateAdded: item.dateAdded,
+        description: item.shortDescription,
+        requiredAction: item.requiredAction,
+        dueDate: item.dueDate,
+        url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      }));
+
+    return new Response(
+      JSON.stringify({
+        updated: new Date().toISOString(),
+
+        sources: {
+          nvd: "NVD",
+          cisaKev: "CISA KEV",
+        },
+
+        vulnerabilities,
+        exploited,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=900",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Cyber intelligence error:", error);
+
+    return new Response(
+      JSON.stringify({
+        error: "Unable to fetch cybersecurity intelligence",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
+  }
+};
+
