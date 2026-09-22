@@ -36,3 +36,8 @@ functions/api/*.disabled
 
 # Next static export output
 out/
+
+out/
+*.backup
+fix_symbols.py
+CHATBOT-COMPLETE-AUDIT.txt
